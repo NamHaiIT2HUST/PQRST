@@ -1,0 +1,21 @@
+# Sieu tham so train amortized T_phi cho Pha R.
+# Dung boi notebooks/phase_r_02_train_amortized.ipynb
+
+train:
+  # Mang lon hon Pha Q ([64,64]) vi gio phai hoc nhieu cau hinh cung luc, khong chi 1.
+  hidden_dims: [128, 128, 64]
+  learning_rate: 0.001
+  windows_per_batch: 32       # so CUA SO moi buoc cap nhat (khong phai so mau)
+  max_epochs: 100
+  patience: 15
+
+  # Sua loi da phat hien khi review Pha Q (xem docs/PHASE_Q_REPORT.md muc 4):
+  eval_n_shuffles: 20             # KHONG dung 1 lan shuffle (phuong sai qua cao)
+  final_estimate_last_k_epochs: 10  # trung binh k epoch cuoi, KHONG "best-of-all-epochs"
+
+  seed: 42
+
+# So lan shuffle khi danh gia tren tap test o notebook 03 (cao hon luc train de giam
+# nhieu do luong - day la buoc chay 1 lan, khong phai vong lap train nen chap nhan cham).
+eval:
+  n_shuffles: 50

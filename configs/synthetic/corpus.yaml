@@ -1,0 +1,25 @@
+# Cau hinh sinh kho ngu lieu (corpus) cho Pha R.
+# Dung boi notebooks/phase_r_01_generate_corpus.ipynb
+
+# He so tu-hoi-quy giu CO DINH trong Pha R (chi quet coupling va noise), de khong gian
+# cau hinh du lon ma van dien giai duoc.
+a: 0.5
+b: 0.5
+
+# Luoi quet. Tong so cua so = len(coupling) * len(noise) * len(n) * n_windows_per_cell
+#                           = 5 * 3 * 6 * 300 = 27,000 cua so (>= 20,000 theo roadmap)
+coupling_values: [0.0, 0.2, 0.4, 0.6, 0.8]
+noise_values: [0.3, 0.5, 1.0]
+n_values: [10, 20, 30, 50, 100, 200]
+n_windows_per_cell: 300
+
+base_seed: 100000
+
+# Chia train/validation THEO CUA SO (khong theo mau) - xem corpus.py
+val_fraction: 0.15    # ~4,050 cua so validation (>= 2,000 theo roadmap)
+split_seed: 7
+
+# Tap TEST rieng biet, seed hoan toan khac, dung o notebook 03 de danh gia cuoi cung.
+# KHONG duoc dung tap nay trong bat ky quyet dinh nao o buoc train/tinh chinh.
+test_base_seed: 900000
+test_n_windows_per_cell: 200

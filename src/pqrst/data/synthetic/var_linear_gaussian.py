@@ -101,6 +101,50 @@ def generate_var_linear_gaussian(
     return x[burn_in:], y[burn_in:], float(te_ground_truth)
 
 
+def compute_var_linear_ground_truths(
+    a: float, b: float, c: float, noise_std: float
+) -> dict[str, float]:
+    """Tra ve CA BA ground-truth can cho Pha R, tinh tu cung 1 ma tran hiep phuong sai:
+        - "mi_full"    = I(Y[t]; X[t-1], Y[t-1])
+        - "mi_reduced" = I(Y[t]; Y[t-1])
+        - "te"         = TE(X->Y) = mi_full - mi_reduced
+
+    Vi sao can: Pha R uoc luong TE qua phan ra conditional MI
+        I(A;B|C) = I(A;B,C) - I(A;C)
+    voi A=Y[t], B=X[t-1], C=Y[t-1]. De danh gia tung SO HANG rieng (khong chi ket qua
+    cuoi), can ground-truth cho ca 2 so hang - day chinh la thu ham nay cung cap.
+
+    DA VERIFY: dong nhat thuc "te = mi_full - mi_reduced" khop voi cong thuc dong TE
+    doc lap trong generate_var_linear_gaussian den do chinh xac may (sai khac ~1.4e-16
+    tai a=0.5,b=0.5,c=0.6,noise_std=0.5). Neu ban code xong ma 2 con so nay lech nhau
+    dang ke, do la dau hieu code sai - dung bo qua.
+
+    Cach tinh (Z = (Y[t], X[t-1], Y[t-1]) la vector Gaussian dong thoi):
+        s_xx, s_xy, s_yy = _compute_stationary_covariance(a, b, c, noise_std)
+        cov_yt_xlag = b*s_xy + c*s_xx      # Cov(Y[t], X[t-1])
+        cov_yt_ylag = b*s_yy + c*s_xy      # Cov(Y[t], Y[t-1])
+        C = [[s_yy,        cov_yt_xlag, cov_yt_ylag],
+             [cov_yt_xlag, s_xx,        s_xy       ],
+             [cov_yt_ylag, s_xy,        s_yy       ]]
+    Roi dung entropy Gaussian H(cov) = 0.5*log((2*pi*e)^d * det(cov)) va
+        I(A;B) = H(A) + H(B) - H(A,B)
+    voi cac khoi con tuong ung cua C.
+
+    Args:
+        a, b, c, noise_std: giong het tham so cua generate_var_linear_gaussian.
+
+    Returns:
+        dict co dung 3 khoa: "mi_full", "mi_reduced", "te" (don vi: nat).
+
+    TODO(ban tu code):
+        - Dung numpy: np.linalg.det (hoac slogdet cho on dinh so hoc hon khi det nho).
+        - Viet 1 ham phu _gaussian_entropy(cov) nhan ma tran (hoac vo huong) de dung lai.
+        - Assert noi bo: abs((mi_full - mi_reduced) - te_tu_cong_thuc_doc_lap) < 1e-9,
+          de bat loi ngay neu code sai.
+    """
+    raise NotImplementedError
+
+
 def compute_lag1_mi_ground_truth(a: float, b: float, c: float, noise_std: float) -> float:
     s_xx, s_xy, s_yy = _compute_stationary_covariance(a, b, c, noise_std)
     cov_xlag_ynow = b * s_xy + c * s_xx

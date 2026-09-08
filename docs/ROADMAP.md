@@ -185,6 +185,7 @@ Chi tiết đầy đủ (kiến trúc mạng, công thức loss, spec bài toán
 - [x] Khung thư mục repo dựng xong (xem `README.md` ở gốc repo).
 - [x] **Pha P xong** — 3 bộ sinh dữ liệu tổng hợp, 3 baseline (KSG/binning/symbolic), script validate, đã qua 1 vòng review sửa lỗi công thức ground-truth. Chi tiết: [`PHASE_P_REPORT.md`](PHASE_P_REPORT.md).
 - [x] **Pha Q xong** — `StatisticsNetwork`, `donsker_varadhan_loss`, `shuffle_batch`, `train_mine` implement xong, smoke test MI(X[t-1];Y[t]) đạt sai số 0.8–7.6% qua nhiều seed (ngưỡng 20%), 20/20 test pass, không phát hiện lỗi khi review. EMA bias correction không dùng (quyết định có chủ đích, để dành Pha R). Chi tiết: [`PHASE_Q_GUIDE.md`](PHASE_Q_GUIDE.md).
-- [ ] Pha R — mở rộng conditional MI/TE, kiểm định đầy đủ trên lưới cấu hình (việc tiếp theo).
+- [x] Tài liệu hướng dẫn Pha R chi tiết ([`PHASE_R_GUIDE.md`](PHASE_R_GUIDE.md)) + khung code (stub trong `src/pqrst/data/synthetic/corpus.py`, `src/pqrst/estimators/mine/{conditional,amortized}.py`, `src/pqrst/evaluation/grid.py`, 4 notebook `notebooks/phase_r_*.ipynb`, `tests/test_corpus_and_conditional.py`).
+- [ ] Pha R — code thật + chạy 4 notebook (việc tiếp theo, xem checklist trong `PHASE_R_GUIDE.md` mục 7).
 
 Tài liệu tạp chí mục tiêu và bảng rủi ro theo nhịp giữ nguyên như bản gốc của mentor — không lặp lại ở đây, xem [`PQRST_Roadmap_goc.md`](PQRST_Roadmap_goc.md).
