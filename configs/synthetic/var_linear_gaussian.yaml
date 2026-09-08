@@ -1,0 +1,28 @@
+# Tham so cho src/pqrst/data/synthetic/var_linear_gaussian.py
+# TE ground-truth co cong thuc dong - khong can luu san, tinh truc tiep tu cac tham so nay.
+
+# Danh sach cau hinh dung de validate baseline o Pha P (scripts/validate_baselines.py).
+# Moi entry la 1 bo tham so; "coupled" (c != 0) va "uncoupled" (c == 0) deu can co
+# de kiem tra ca 2 chieu: baseline phai bao TE > 0 khi co ghep noi, va TE ~ 0 khi khong.
+configs:
+  - name: coupled_low_noise
+    a: 0.5
+    b: 0.5
+    c: 0.6
+    noise_std: 0.5
+  - name: coupled_high_noise
+    a: 0.5
+    b: 0.5
+    c: 0.6
+    noise_std: 1.5
+  - name: uncoupled
+    a: 0.5
+    b: 0.5
+    c: 0.0
+    noise_std: 0.5
+
+# Danh sach N dung de quet o Pha R (de tham khao truoc, chua bat buoc dung o Pha P).
+n_grid: [10, 20, 30, 50, 100, 200]
+
+# So lan lap lai (voi seed khac nhau) cho moi cau hinh khi validate.
+n_repetitions: 50

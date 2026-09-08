@@ -1,0 +1,3 @@
+# Tham so cho src/pqrst/baselines/symbolic_te.py
+pattern_length: 3   # "m" trong Staniek & Lehnertz 2008
+delay: 1
