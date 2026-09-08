@@ -38,6 +38,8 @@ Chi tiết đầy đủ: [`PHASE_P_GUIDE.md`](PHASE_P_GUIDE.md). Tóm tắt:
 
 ## Pha Q — MINE cổ điển (1–2 tuần)
 
+Chi tiết đầy đủ (kiến trúc mạng, công thức loss, spec bài toán smoke test đã verify bằng Monte Carlo, checklist thoát): [`PHASE_Q_GUIDE.md`](PHASE_Q_GUIDE.md).
+
 **Input:** Pha P xong — có bộ sinh dữ liệu tổng hợp đơn giản nhất (VAR tuyến tính Gaussian, 1 cấu hình cố định) và baseline để đối chiếu.
 
 **Việc cần làm:**
@@ -181,10 +183,8 @@ Chi tiết đầy đủ: [`PHASE_P_GUIDE.md`](PHASE_P_GUIDE.md). Tóm tắt:
 ## Trạng thái hiện tại
 
 - [x] Khung thư mục repo dựng xong (xem `README.md` ở gốc repo).
-- [x] Tài liệu roadmap chi tiết (file này) + hướng dẫn Pha P chi tiết ([`PHASE_P_GUIDE.md`](PHASE_P_GUIDE.md)).
-- [ ] Môi trường Python cài đặt (việc của bạn — xem checklist trong `PHASE_P_GUIDE.md`).
-- [ ] 3 bộ sinh dữ liệu tổng hợp — code thật (hiện là stub có docstring/spec trong `src/pqrst/data/synthetic/`).
-- [ ] 3 baseline wrapper — code thật (stub trong `src/pqrst/baselines/`).
-- [ ] Script validate — code thật (stub trong `scripts/`).
+- [x] **Pha P xong** — 3 bộ sinh dữ liệu tổng hợp, 3 baseline (KSG/binning/symbolic), script validate, đã qua 1 vòng review sửa lỗi công thức ground-truth. Chi tiết: [`PHASE_P_REPORT.md`](PHASE_P_REPORT.md).
+- [x] Tài liệu hướng dẫn Pha Q chi tiết ([`PHASE_Q_GUIDE.md`](PHASE_Q_GUIDE.md)) + khung code (stub trong `src/pqrst/estimators/mine/`, `configs/mine/`, `scripts/train_mine_smoke_test.py`, `tests/test_mine.py`).
+- [ ] Pha Q — code thật cho `StatisticsNetwork`, `donsker_varadhan_loss`, `shuffle_batch`, `train_mine` (việc tiếp theo, xem checklist trong `PHASE_Q_GUIDE.md` mục 7).
 
 Tài liệu tạp chí mục tiêu và bảng rủi ro theo nhịp giữ nguyên như bản gốc của mentor — không lặp lại ở đây, xem [`PQRST_Roadmap_goc.md`](PQRST_Roadmap_goc.md).

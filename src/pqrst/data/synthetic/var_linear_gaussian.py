@@ -93,3 +93,44 @@ def generate_var_linear_gaussian(
     te_ground_truth = 0.5 * np.log(1 + c**2 * var_x_given_y / sigma2)
 
     return x[burn_in:], y[burn_in:], float(te_ground_truth)
+
+
+def compute_lag1_mi_ground_truth(a: float, b: float, c: float, noise_std: float) -> float:
+    """MI(X[t-1]; Y[t]) dang cong thuc dong - dung lam bai toan "smoke test" don gian
+    cho MINE o Pha Q (xem docs/PHASE_Q_GUIDE.md muc 4), TRUOC KHI mo rong sang
+    conditional MI/TE o Pha R.
+
+    Khac voi TE(X->Y) o generate_var_linear_gaussian (dieu kien tren Y[t-1]), day la
+    MI KHONG dieu kien giua X[t-1] va Y[t] - don gian hon, phu hop lam bai toan dau
+    tien de kiem tra vong lap MINE chay dung (it rui ro nhat, theo dung tinh than
+    "MINE 2018 la cong thuc da kiem chung" cua mentor).
+
+    Vi (X[t-1], Y[t]) la cap Gaussian dong thoi (jointly Gaussian) trong phan phoi
+    dung cua he VAR(1), MI co cong thuc dong chuan cho cap Gaussian:
+        MI = -0.5 * log(1 - rho^2),  rho = Corr(X[t-1], Y[t])
+
+    Tai su dung dung hiep phuong sai dung [s_xx, s_xy, s_yy] tu
+    generate_var_linear_gaussian (giai Lyapunov), roi tinh them:
+        cov_xlag_ynow = b * s_xy + c * s_xx      # Cov(X[t-1], Y[t])
+        rho = cov_xlag_ynow / sqrt(s_xx * s_yy)
+        MI = -0.5 * log(1 - rho^2)
+
+    Da verify cong thuc nay khop mo phong Monte Carlo truc tiep (N=2,000,000, tinh
+    corrcoef thuc nghiem giua X[t-1] va Y[t]) trong sai so < 0.3% tuong doi, tai cau
+    hinh a=0.5, b=0.5, c=0.6, noise_std=0.5 (MI thuc nghiem 0.2191 vs cong thuc dong
+    0.2197).
+
+    Args:
+        a, b, c, noise_std: giong het tham so cua generate_var_linear_gaussian.
+
+    Returns:
+        MI(X[t-1]; Y[t]) tinh theo cong thuc dong o tren (don vi: nat).
+
+    TODO(ban tu code):
+        - Tinh lai s_xx, s_xy, s_yy y het logic trong generate_var_linear_gaussian
+          (co the goi 1 ham dung chung __compute_stationary_covariance(a,b,c,noise_std)
+          -> (s_xx, s_xy, s_yy) roi dung o ca 2 noi, tranh lap code cong thuc Lyapunov
+          2 lan trong file nay).
+        - Ap dung dung cong thuc cov_xlag_ynow, rho, MI o tren.
+    """
+    raise NotImplementedError

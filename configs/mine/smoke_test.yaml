@@ -1,0 +1,25 @@
+# Cau hinh cho scripts/train_mine_smoke_test.py (Pha Q)
+# Bai toan: MI(X[t-1]; Y[t]) tren du lieu VAR tuyen tinh Gaussian, cau hinh giong het
+# "coupled_low_noise" da dung o Pha P de de doi chieu.
+
+data:
+  a: 0.5
+  b: 0.5
+  c: 0.6
+  noise_std: 0.5
+  n_realizations: 50          # so lan goi generator voi seed khac nhau, roi ghep lai
+  n_samples_per_realization: 2000   # -> tong ~100,000 cap (x[t-1], y[t])
+  base_seed: 1000              # seed cho realization thu i la base_seed + i
+
+train:
+  hidden_dims: [64, 64]
+  learning_rate: 0.001
+  batch_size: 256
+  max_epochs: 200
+  patience: 15
+  val_fraction: 0.2
+  seed: 42
+
+# Nguong chap nhan cho tieu chi thoat (xem docs/PHASE_Q_GUIDE.md muc 7):
+# |MI_estimate - MI_ground_truth| / MI_ground_truth < acceptance_relative_error
+acceptance_relative_error: 0.20
