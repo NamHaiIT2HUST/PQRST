@@ -13,4 +13,4 @@ def make_rng(seed: int) -> np.random.Generator:
 
     TODO(ban tu code): 1 dong, return np.random.default_rng(seed).
     """
-    raise NotImplementedError
+    return np.random.default_rng(seed)

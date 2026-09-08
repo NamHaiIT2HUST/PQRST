@@ -12,7 +12,7 @@ def bias(estimates: np.ndarray, ground_truth: float) -> float:
 
     TODO(ban tu code): 1 dong, dung np.mean.
     """
-    raise NotImplementedError
+    return float(np.mean(estimates) - ground_truth)
 
 
 def mse(estimates: np.ndarray, ground_truth: float) -> float:
@@ -20,4 +20,4 @@ def mse(estimates: np.ndarray, ground_truth: float) -> float:
 
     TODO(ban tu code): 1 dong, dung np.mean((estimates - ground_truth) ** 2).
     """
-    raise NotImplementedError
+    return float(np.mean((estimates - ground_truth) ** 2))
