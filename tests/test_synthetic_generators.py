@@ -22,30 +22,50 @@ from pqrst.data.synthetic.periodic_coupling import generate_periodic_coupling
 
 class TestVarLinearGaussian:
     def test_output_shape(self):
-        pytest.skip("TODO: implement sau khi generate_var_linear_gaussian xong")
+        x, y, te = generate_var_linear_gaussian(100, 0.5, 0.5, 0.1, 0.1, 42)
+        assert x.shape == (100,)
+        assert y.shape == (100,)
+        assert isinstance(te, float)
 
     def test_reproducible_with_same_seed(self):
-        pytest.skip("TODO: implement")
+        x1, y1, te1 = generate_var_linear_gaussian(100, 0.5, 0.5, 0.1, 0.1, 42)
+        x2, y2, te2 = generate_var_linear_gaussian(100, 0.5, 0.5, 0.1, 0.1, 42)
+        np.testing.assert_array_equal(x1, x2)
+        np.testing.assert_array_equal(y1, y2)
+        assert te1 == te2
 
     def test_uncoupled_ground_truth_near_zero(self):
-        pytest.skip("TODO: implement - c=0 thi te_ground_truth phai gan 0")
+        x, y, te = generate_var_linear_gaussian(100, 0.5, 0.5, 0.0, 0.1, 42)
+        assert np.isclose(te, 0.0)
 
 
 class TestVarNonlinear:
     def test_output_shape(self):
-        pytest.skip("TODO: implement sau khi generate_var_nonlinear xong")
+        x, y = generate_var_nonlinear(100, 0.5, 0.5, 0.1, 0.1, 42)
+        assert x.shape == (100,)
+        assert y.shape == (100,)
 
     def test_reproducible_with_same_seed(self):
-        pytest.skip("TODO: implement")
+        x1, y1 = generate_var_nonlinear(100, 0.5, 0.5, 0.1, 0.1, 42)
+        x2, y2 = generate_var_nonlinear(100, 0.5, 0.5, 0.1, 0.1, 42)
+        np.testing.assert_array_equal(x1, x2)
+        np.testing.assert_array_equal(y1, y2)
 
 
 class TestPeriodicCoupling:
     def test_output_shape(self):
-        pytest.skip("TODO: implement sau khi generate_periodic_coupling xong")
+        x, y = generate_periodic_coupling(100, 0.1, 0.2, 0.1, 0.01, 42)
+        assert x.shape == (100,)
+        assert y.shape == (100,)
 
     def test_reproducible_with_same_seed(self):
-        pytest.skip("TODO: implement")
+        x1, y1 = generate_periodic_coupling(100, 0.1, 0.2, 0.1, 0.01, 42)
+        x2, y2 = generate_periodic_coupling(100, 0.1, 0.2, 0.1, 0.01, 42)
+        np.testing.assert_array_equal(x1, x2)
+        np.testing.assert_array_equal(y1, y2)
 
     def test_output_range_bounded(self):
         """x, y phai trong [-1, 1] vi la sin() cua pha."""
-        pytest.skip("TODO: implement")
+        x, y = generate_periodic_coupling(100, 0.1, 0.2, 0.1, 0.01, 42)
+        assert np.all(x >= -1.0) and np.all(x <= 1.0)
+        assert np.all(y >= -1.0) and np.all(y <= 1.0)
