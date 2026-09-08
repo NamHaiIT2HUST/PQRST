@@ -1,5 +1,6 @@
 # Tham so cho src/pqrst/baselines/binning.py
 n_bins: 8
-binning_strategy: equal_width   # hoac equal_frequency - quyet dinh khi code, ghi lai ly do
-history_length_x: 1
-history_length_y: 1
+# discretise_method='equal' (equal-width) va history_target=1 dang hardcode trong
+# binning.py (khong doc tu file nay). Neu can chon lai chien luoc binning
+# (vd equal-frequency) hoac history qua config, phai sua binning.py de doc cac gia
+# tri do va truyen vao settings dict cua JidtDiscreteTE.

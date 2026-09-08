@@ -1,5 +1,5 @@
 # Tham so cho src/pqrst/baselines/ksg.py
-# Xac minh ten tham so khop voi API IDTxl thuc te truoc khi dung (co the doi ten).
 k: 4
-history_length_x: 1
-history_length_y: 1
+# history_target=1 dang hardcode trong ksg.py (khong doc tu file nay). Neu can chinh
+# history_source/history_target qua config, phai sua ksg.py de doc va truyen 2 gia tri
+# do vao settings dict cua JidtKraskovTE.
