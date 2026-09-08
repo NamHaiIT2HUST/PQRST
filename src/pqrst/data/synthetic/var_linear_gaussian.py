@@ -47,4 +47,20 @@ def generate_var_linear_gaussian(
         - te_ground_truth tinh truc tiep tu a, b, c, noise_std (khong can uoc luong tu du lieu
           da sinh) - xem cong thuc trong docstring module.
     """
-    raise NotImplementedError
+    rng = np.random.default_rng(seed)
+    burn_in = 100
+    total_samples = n_samples + burn_in
+    
+    x = np.zeros(total_samples)
+    y = np.zeros(total_samples)
+    
+    eps_x = rng.normal(0, noise_std, total_samples)
+    eps_y = rng.normal(0, noise_std, total_samples)
+    
+    for t in range(1, total_samples):
+        x[t] = a * x[t-1] + eps_x[t]
+        y[t] = b * y[t-1] + c * x[t-1] + eps_y[t]
+        
+    te_ground_truth = 0.5 * np.log(1 + (c**2) / (1 - a**2))
+    
+    return x[burn_in:], y[burn_in:], float(te_ground_truth)

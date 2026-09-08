@@ -49,4 +49,18 @@ def generate_var_nonlinear(
         - Can nhac them 1 tham so 'nonlinearity' (vd: "tanh" | "square") neu muon
           thu nhieu dang phi tuyen khac nhau thay vi hard-code tanh.
     """
-    raise NotImplementedError
+    rng = np.random.default_rng(seed)
+    burn_in = 100
+    total_samples = n_samples + burn_in
+    
+    x = np.zeros(total_samples)
+    y = np.zeros(total_samples)
+    
+    eps_x = rng.normal(0, noise_std, total_samples)
+    eps_y = rng.normal(0, noise_std, total_samples)
+    
+    for t in range(1, total_samples):
+        x[t] = a * x[t-1] + eps_x[t]
+        y[t] = b * y[t-1] + c * np.tanh(x[t-1]) + eps_y[t]
+        
+    return x[burn_in:], y[burn_in:]
