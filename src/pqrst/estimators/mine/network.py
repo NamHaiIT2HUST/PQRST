@@ -35,7 +35,26 @@ class StatisticsNetwork(nn.Module):
 
     def __init__(self, input_dim: int, hidden_dims: list[int] | None = None):
         super().__init__()
-        raise NotImplementedError
+        if hidden_dims is None:
+            hidden_dims = [64, 64]
+            
+        layers = []
+        in_dim = input_dim
+        for h_dim in hidden_dims:
+            layers.append(nn.Linear(in_dim, h_dim))
+            layers.append(nn.ELU())
+            in_dim = h_dim
+        layers.append(nn.Linear(in_dim, 1))
+        
+        self.net = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
+        # Check if x or y are 1D, and unsqueeze if necessary
+        if x.dim() == 1:
+            x = x.unsqueeze(-1)
+        if y.dim() == 1:
+            y = y.unsqueeze(-1)
+            
+        xy = torch.cat([x, y], dim=-1)
+        out = self.net(xy)
+        return out.squeeze(-1)

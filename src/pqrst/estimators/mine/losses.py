@@ -25,7 +25,8 @@ def shuffle_batch(y: torch.Tensor) -> torch.Tensor:
         - KHONG dung numpy random / random global state - de nhat quan voi torch RNG
           (va de set torch.manual_seed dieu khien duoc ca qua trinh).
     """
-    raise NotImplementedError
+    perm = torch.randperm(y.shape[0], device=y.device)
+    return y[perm]
 
 
 def donsker_varadhan_loss(t_joint: torch.Tensor, t_marginal: torch.Tensor) -> torch.Tensor:
@@ -45,4 +46,6 @@ def donsker_varadhan_loss(t_joint: torch.Tensor, t_marginal: torch.Tensor) -> to
           torch.log(torch.tensor(t_marginal.shape[0], dtype=t_marginal.dtype)))
         - return -dv_bound
     """
-    raise NotImplementedError
+    dv_bound = t_joint.mean() - (torch.logsumexp(t_marginal, dim=0) -
+                                 torch.log(torch.tensor(t_marginal.shape[0], dtype=t_marginal.dtype, device=t_marginal.device)))
+    return -dv_bound
