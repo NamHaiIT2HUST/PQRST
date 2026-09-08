@@ -29,4 +29,31 @@ class SymbolicTEEstimator(BaseTEEstimator):
         self.extra_kwargs = kwargs
 
     def estimate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> float:
-        raise NotImplementedError
+        from idtxl.estimators_jidt import JidtDiscreteTE
+        
+        def encode_ordinal(series: np.ndarray, m: int, delay: int) -> np.ndarray:
+            n = len(series)
+            patterns = []
+            for i in range(n - (m - 1) * delay):
+                window = series[i : i + m * delay : delay]
+                patterns.append(tuple(np.argsort(window)))
+            # Map tuples to consecutive integers
+            unique_patterns, indices = np.unique(patterns, axis=0, return_inverse=True)
+            return indices
+            
+        x_sym = encode_ordinal(x, self.pattern_length, self.delay)
+        y_sym = encode_ordinal(y, self.pattern_length, self.delay)
+        
+        import math
+        settings = {
+            'history_target': 1,
+            'discretise_method': 'none', # already discrete
+            'alph1': math.factorial(self.pattern_length),
+            'alph2': math.factorial(self.pattern_length),
+        }
+        settings.update(self.extra_kwargs)
+        settings.update(kwargs)
+        
+        estimator = JidtDiscreteTE(settings)
+        te_bits = estimator.estimate(x_sym, y_sym)
+        return float(te_bits * np.log(2))

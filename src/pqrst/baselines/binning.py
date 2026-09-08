@@ -25,4 +25,16 @@ class BinningTEEstimator(BaseTEEstimator):
         self.extra_kwargs = kwargs
 
     def estimate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> float:
-        raise NotImplementedError
+        from idtxl.estimators_jidt import JidtDiscreteTE
+        settings = {
+            'history_target': 1,
+            'discretise_method': 'equal',
+            'n_discrete_bins': self.n_bins,
+        }
+        settings.update(self.extra_kwargs)
+        settings.update(kwargs)
+        
+        estimator = JidtDiscreteTE(settings)
+        # JidtDiscreteTE returns bits, convert to nats
+        te_bits = estimator.estimate(x, y)
+        return float(te_bits * np.log(2))

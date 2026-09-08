@@ -1,5 +1,5 @@
 # Pha P (Nhịp 1 - Khởi động)
-numpy
+numpy<2
 scipy
 pandas
 PyYAML
@@ -15,7 +15,6 @@ torch
 # Baseline TE cổ điển (KSG / binning) — cần JVM, xem docs/PHASE_P_GUIDE.md muc 1.3
 # Xac minh ten goi/API truoc khi dung, IDTxl co the da doi so voi ban duoi day.
 JPype1
-idtxl
 
 # Symbolic TE: chua chon thu vien co dinh — xem docs/references/symbolic_te_decision.md
 # (co the them pyinform hoac tuong duong sau khi quyet dinh)

@@ -24,4 +24,16 @@ class KSGTEEstimator(BaseTEEstimator):
         self.idtxl_kwargs = idtxl_kwargs
 
     def estimate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> float:
-        raise NotImplementedError
+        from idtxl.estimators_jidt import JidtKraskovTE
+        settings = {
+            'history_target': 1,
+            'kraskov_k': self.k,
+            'noise_level': 0.0,
+        }
+        settings.update(self.idtxl_kwargs)
+        settings.update(kwargs)
+        
+        estimator = JidtKraskovTE(settings)
+        # JidtKraskovTE returns nats
+        te = estimator.estimate(x, y)
+        return float(te)
