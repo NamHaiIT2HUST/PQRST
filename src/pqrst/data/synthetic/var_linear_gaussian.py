@@ -10,6 +10,30 @@ dong tuong duong Granger causality (Geweke, 1982):
     TE(X->Y) = 0.5 * log( var(residual hoi quy Y[t] tren Y[t-1] don) /
                            var(residual hoi quy Y[t] tren Y[t-1] va X[t-1]) )
 
+var(residual hoi quy Y[t] tren Y[t-1] va X[t-1]) = noise_std^2 (dung bang phuong sai
+nhieu eps_y, vi mo hinh dung la tuyen tinh trong Y[t-1], X[t-1]).
+
+var(residual hoi quy Y[t] tren Y[t-1] DON) KHONG duoc phep xap xi bang var(X[t-1]) =
+noise_std^2/(1-a^2) - do la mot loi de mac phai (da tung co trong 1 phien ban truoc
+cua file nay, gay sai so ~8% so voi mo phong Monte Carlo o cau hinh a=0.5,b=0.5,c=0.6).
+Sai lam nam o cho gia dinh ngam X[t-1] doc lap voi Y[t-1], nhung dieu do CHI dung khi
+a = 0: khi a != 0, Y[t-1] phu thuoc X[t-2], ma X[t-2] tuong quan voi X[t-1] qua he so
+tu-hoi-quy a cua X, nen X[t-1] va Y[t-1] noi chung tuong quan voi nhau khi a != 0 va
+c != 0 (dung ca 2 dieu kien nay).
+
+Cong thuc dong CHINH XAC (giai he phuong trinh Lyapunov roi rac cho hiep phuong sai
+dung cua VAR(1) 2 chieu [X, Y], roi dung Var(Y[t]|Y[t-1]) = c^2 * Var(X[t-1]|Y[t-1])
++ noise_std^2 qua luat total variance):
+    sigma2 = noise_std^2
+    s_xx = sigma2 / (1 - a^2)                          # Var(X) dung
+    s_xy = a * c * s_xx / (1 - a*b)                     # Cov(X, Y) dung
+    s_yy = (c^2*s_xx + 2*b*c*s_xy + sigma2) / (1 - b^2)  # Var(Y) dung
+    var_x_given_y = s_xx - s_xy^2 / s_yy                 # Var(X[t-1] | Y[t-1])
+    TE(X->Y) = 0.5 * log(1 + c^2 * var_x_given_y / sigma2)
+
+Da verify cong thuc nay khop mo phong Monte Carlo truc tiep (N=2,000,000, hoi quy OLS
+Y[t] tren [Y[t-1], X[t-1]] va tren Y[t-1] don) trong sai so < 0.1% tuong doi.
+
 Xem chi tiet spec va ly do chon mo hinh nay trong docs/PHASE_P_GUIDE.md, muc 2.1.
 """
 
@@ -61,6 +85,11 @@ def generate_var_linear_gaussian(
         x[t] = a * x[t-1] + eps_x[t]
         y[t] = b * y[t-1] + c * x[t-1] + eps_y[t]
         
-    te_ground_truth = 0.5 * np.log(1 + (c**2) / (1 - a**2))
-    
+    sigma2 = noise_std**2
+    s_xx = sigma2 / (1 - a**2)
+    s_xy = a * c * s_xx / (1 - a * b)
+    s_yy = (c**2 * s_xx + 2 * b * c * s_xy + sigma2) / (1 - b**2)
+    var_x_given_y = s_xx - s_xy**2 / s_yy
+    te_ground_truth = 0.5 * np.log(1 + c**2 * var_x_given_y / sigma2)
+
     return x[burn_in:], y[burn_in:], float(te_ground_truth)

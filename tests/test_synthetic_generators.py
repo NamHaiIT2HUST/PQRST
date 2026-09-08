@@ -38,6 +38,19 @@ class TestVarLinearGaussian:
         x, y, te = generate_var_linear_gaussian(100, 0.5, 0.5, 0.0, 0.1, 42)
         assert np.isclose(te, 0.0)
 
+    def test_ground_truth_matches_ksg_at_large_n(self):
+        """Sanity check cheo bat buoc (PHASE_P_GUIDE.md muc 2.4): cong thuc dong
+        te_ground_truth phai khop voi TE uoc luong boi KSG (estimator lien tuc, khong
+        gia dinh gi ve dang tuyen tinh) o N lon. Day chinh la test le ra phai bat duoc
+        loi cong thuc ground-truth cu (gia dinh sai X[t-1] doc lap Y[t-1] khi a != 0).
+        """
+        from pqrst.baselines.ksg import KSGTEEstimator
+
+        x, y, te_gt = generate_var_linear_gaussian(200_000, 0.5, 0.5, 0.6, 0.5, seed=42)
+        te_ksg = KSGTEEstimator().estimate(x, y)
+
+        assert abs(te_ksg - te_gt) / te_gt < 0.10
+
 
 class TestVarNonlinear:
     def test_output_shape(self):
