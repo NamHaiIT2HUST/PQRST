@@ -14,6 +14,10 @@ configs:
     omega_y: 0.31
     coupling_k: 0.0
     noise_std: 0.1
+    # 0.0 la gia tri LY THUYET dung (coupling_k=0 -> X, Y doc lap -> TE that = 0
+    # chinh xac), khong phai gia tri KSG in ra tu notebook (KSG tai N=200k ra
+    # -0.002498, do bias am huu han mau khi TE that gan 0).
+    # Xem notebooks/estimate_pseudo_ground_truth.ipynb.
     pseudo_ground_truth_te: 0.0
 
 pseudo_ground_truth_n_samples: 200000
