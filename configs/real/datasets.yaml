@@ -1,0 +1,59 @@
+# Thong tin 4 bo du lieu - DA XAC MINH truc tiep tren trang PhysioNet.
+# *** Fantasia va Apnea-ECG KHONG CO EEG *** - khong the dung cho luan diem tim-nao.
+
+datasets:
+  slpdb:
+    physionet_name: slpdb
+    full_name: MIT-BIH Polysomnographic Database
+    has_eeg: true
+    has_ecg: true
+    has_beat_annotations: true    # file .ecg - dung luon, khong can chay QRS detector
+    n_records: 18
+    size_mb: 632
+    format: wfdb
+    role: primary                 # TE tim-nao + sanity check
+    records: null                 # null = tai het (chi 632MB)
+
+  capslpdb:
+    physionet_name: capslpdb
+    full_name: CAP Sleep Database
+    has_eeg: true
+    has_ecg: true
+    has_beat_annotations: false   # EDF - phai tu do QRS
+    n_records: 108
+    size_mb: 40100                # 40.1 GB - KHONG tai het
+    format: edf
+    role: primary                 # TE tim-nao + tai lap doc lap
+    # Chi tai 16 ban ghi nguoi khoe manh - du cho sanity check, doi chung sach nhat.
+    records: [n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16]
+
+  fantasia:
+    physionet_name: fantasia
+    full_name: Fantasia Database
+    has_eeg: false                # *** KHONG CO EEG ***
+    has_ecg: true
+    has_respiration: true
+    has_beat_annotations: true
+    n_records: 40
+    size_mb: 293
+    sampling_rate_hz: 250
+    format: wfdb
+    role: secondary               # ghep noi tim-ho hap; so sanh tre (20) vs gia (20)
+    records: null
+
+  apnea_ecg:
+    physionet_name: apnea-ecg
+    full_name: Apnea-ECG Database
+    has_eeg: false                # *** KHONG CO EEG ***
+    has_ecg: true
+    # CHI 8/70 ban ghi co them ho hap + SpO2:
+    records_with_respiration: [a01, a02, a03, a04, b01, c01, c02, c03]
+    has_beat_annotations: true
+    n_records: 70
+    size_mb: 581
+    sampling_rate_hz: 100
+    format: wfdb
+    role: secondary               # tim-ho hap tren 8 ban ghi; con lai chi dong luc hoc tim
+    records: null
+
+download_dir: data/raw/physionet

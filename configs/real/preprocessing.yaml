@@ -1,0 +1,42 @@
+# Cau hinh tien xu ly du lieu sinh ly that (Pha S).
+# Xem docs/PHASE_S_GUIDE.md truoc khi doi bat ky gia tri nao o day.
+
+# --- Luoi thoi gian chung cho CA HAI kenh (tim va nao) ---
+# Bat buoc dung chung 1 gia tri - day la co so cua dong bo hoa (muc 2.3).
+grid_fs: 4.0          # Hz
+
+# --- Cua so ---
+# 30 giay x 4 Hz = 120 mau. Chon 30s vi 2 ly do:
+#   1. Nam gon trong vung T_phi thang KSG (N>=50, theo ket qua Pha R).
+#   2. Dung bang 1 epoch cham giai doan giac ngu tieu chuan -> khop nhan co san.
+window_seconds: 30.0
+step_seconds: 30.0    # khong chong lan (cua so doc lap -> phep thong ke sach hon)
+
+# --- Kenh tim ---
+cardiac:
+  keep_beat_symbols: ["N"]     # CHI giu nhip normal - xem cardiac.py
+  rr_physiological_range: [0.3, 2.0]   # giay (~30-200 bpm)
+  ectopic_threshold_ratio: 0.2         # loai RR lech >20% so voi trung vi cuc bo
+  max_removed_fraction: 0.2            # neu phai loai >20% -> loai ca ban ghi
+  interpolation: cubic                 # hoac linear - ghi ro lua chon trong bao cao
+
+# --- Kenh nao ---
+eeg:
+  band: alpha          # delta | theta | alpha | beta (xem EEG_BANDS trong eeg.py)
+  log_transform: true  # cong suat lech phai manh -> log dua ve gan Gaussian
+  spectrogram_window_seconds: 4.0   # >= vai chu ky cua tan so thap nhat trong band
+
+# --- Kiem tra nhieu truong tim (BAT BUOC, muc 3.2) ---
+cardiac_artifact_check:
+  window_ms: 200.0
+  artifact_ratio_threshold: 2.0   # > nguong nay -> nghi EEG bi nhiem, phai xu ly
+
+# --- Kiem tra dong bo hoa (BAT BUOC, muc 2.3) ---
+sync_check:
+  shift_seconds: 10.0
+  max_ratio_for_pass: 0.7   # TE sau khi dich phai < 70% TE ban dau
+
+# --- Thong ke ---
+n_bootstrap: 500
+n_permutations: 500
+seed: 42

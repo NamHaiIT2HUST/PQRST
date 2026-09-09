@@ -18,3 +18,9 @@ JPype1
 
 # Symbolic TE: chua chon thu vien co dinh — xem docs/references/symbolic_te_decision.md
 # (co the them pyinform hoac tuong duong sau khi quyet dinh)
+
+# Pha S (du lieu sinh ly that) — xem docs/PHASE_S_GUIDE.md
+# wfdb: doc dinh dang PhysioNet (.dat/.hea) + tai du lieu — dung cho slpdb, fantasia,
+#       apnea-ecg. mne: doc EDF — CAP Sleep Database luu duoi dang EDF.
+wfdb
+mne
