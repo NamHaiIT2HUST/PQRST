@@ -155,10 +155,36 @@ jupyter lab notebooks/phase_r_05_ablation_small_network.ipynb
 ```
 Chạy tuần tự từng ô. Mục 2 của notebook sẽ tự in lại ước tính thời gian trên máy bạn trước khi chạy full ở mục 3 — kiểm tra con số đó hợp lý (không phải hàng chục giờ) rồi mới chạy tiếp.
 
-## 8. Việc còn lại / khuyến nghị
+## 8. Kết quả ablation mạng nhỏ — giả thuyết "ít tham số" bị bác bỏ
+
+Đã chạy xong `notebooks/phase_r_05_ablation_small_network.ipynb` (100 epoch, ~116 phút, hội tụ tốt — val loss std=0.0005, thấp hơn cả mạng chính).
+
+| | Mạng LỚN `[128,128,64]` | Mạng NHỎ `[16,16]` |
+|---|---|---|
+| Bias @ N=10 | -0.0651 | -0.0635 |
+| Variance @ N=10 | 0.01168 | 0.01237 (nhích cao hơn) |
+| Variance @ N=20 | 0.00639 | 0.00679 (nhích cao hơn) |
+| Thắng KSG (N<30) | **9/30** | **9/30** |
+
+![variance comparison](../results/figures/phase_r_ablation_variance_comparison.png)
+
+**Kết luận rõ ràng: giảm ~70 lần số tham số không cải thiện gì** — 2 đường variance-vs-N gần như song song và sát nhau suốt từ N=10 đến N=200, cùng cắt KSG ở đúng N≈30, cùng thắng đúng 9/30 ô.
+
+**Ý nghĩa:** giả thuyết "ít tham số = tổng quát tốt hơn ở N nhỏ" — lý do chính đáng nhất để kỳ vọng mạch lượng tử (cũng ít tham số) giúp được ở Nhịp 2 — **bị bác bỏ bởi bằng chứng thực nghiệm này**. Vấn đề ở N=10-20 nhiều khả năng không nằm ở dung lượng mô hình, mà ở **nhiễu Monte Carlo không thể giảm vốn có của công thức DV bound** khi số điểm dữ liệu quá ít (ước lượng `logsumexp` trên chỉ 10-20 điểm có phương sai lớn bất kể mạng "khéo" tới đâu) — đây là giới hạn của chính phương pháp đánh giá, không phải của kiến trúc mạng.
+
+## 9. Khuyến nghị hướng tiếp theo
+
+Với kết quả null này, 2 lựa chọn hợp lý:
+
+**(a) Chấp nhận và dùng estimator lai (hybrid) — khuyến nghị, hiệu quả nhất về thời gian.** Điểm giao cắt N≈30 rất rõ và ổn định qua cả 2 lần thử nghiệm (mạng lớn, mạng nhỏ). Có thể dùng thẳng: **KSG cho N<30, Amortized cho N≥30** — tận dụng đúng điểm mạnh của từng phương pháp, không cần nghiên cứu thêm, và về khoa học vẫn là 1 kết quả tốt (amortized thắng rõ ở vùng N vừa/lớn — vẫn có giá trị công bố).
+
+**(b) Đầu tư thêm — thử trên `var_nonlinear.py`/`periodic_coupling.py` (đã có sẵn từ Pha P) thay vì chỉ VAR tuyến tính Gaussian.** KSG rất mạnh trên đúng bài toán Gaussian tuyến tính (sân nhà của k-NN cho phân phối trơn). Có thể trên dữ liệu phi tuyến, khoảng cách sẽ khác hẳn. Đây là hướng còn chưa thử, nhưng tốn công hơn (phải mở rộng `corpus.py` sang 2 generator đó, sinh lại corpus, train lại).
+
+**(c) Hiệu chỉnh bias hậu-nghiệm** (mục 6.1, rẻ, không train lại) — cải thiện MSE thực tế nhưng không đổi tiêu chí thoát dựa trên phương sai.
+
+## 10. Việc còn lại
 
 - [x] Sửa lỗi `grid.py`, thêm test hồi quy, chạy lại toàn bộ 72.000 phép đo.
 - [x] Sửa `train_amortized` để deploy trung bình trọng số k epoch cuối, có test xác nhận.
-- [x] Chuẩn bị ablation mạng nhỏ (`amortized_small.yaml` + notebook 05) — **chờ chủ dự án chạy notebook 05**.
-- [ ] (Tuỳ chọn) Thử hiệu chỉnh bias hậu-nghiệm cho Amortized (mục 6.1) — rẻ, không cần train lại, có thể làm ngay trên checkpoint hiện có, nhưng không ảnh hưởng tiêu chí thoát (dựa trên phương sai, không phải MSE) — làm sau nếu cần cho báo cáo cuối, không chặn.
-- [ ] Sau khi có kết quả notebook 05: nếu mạng nhỏ thắng rõ hơn ở N<30 → có cơ sở mạnh để đầu tư Nhịp 2 (lượng tử); nếu không → cần tìm hướng khác (mục 6.2, 6.3) trước khi đầu tư Nhịp 2.
+- [x] Chạy ablation mạng nhỏ — kết quả null, đã phân tích ở mục 8.
+- [ ] **Chờ quyết định chủ dự án:** chọn (a), (b), hoặc (c) ở mục 9 — hoặc dừng ở đây và qua Pha S với kết quả hiện tại (khuyến nghị nếu ưu tiên tiến độ).
