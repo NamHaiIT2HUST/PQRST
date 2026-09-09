@@ -62,8 +62,32 @@ def estimate_mi_from_window(
         - return float(term_joint - term_marginal)
         - Toan bo trong torch.no_grad(), model.eval().
     """
-    raise NotImplementedError
-
+    # convert to tensor
+    a = torch.tensor(a_vals, dtype=torch.float32)
+    b = torch.tensor(b_vals, dtype=torch.float32)
+    
+    if a.dim() == 1: a = a.unsqueeze(-1)
+    if b.dim() == 1: b = b.unsqueeze(-1)
+    
+    N = a.shape[0]
+    
+    with torch.no_grad():
+        t_joint = model(a, b)
+        term_joint = t_joint.mean().item()
+        
+        log_mean_exps = []
+        rng = torch.Generator().manual_seed(seed)
+        
+        for _ in range(n_shuffles):
+            perm = torch.randperm(N, generator=rng)
+            b_perm = b[perm]
+            t_marginal = model(a, b_perm)
+            lme = torch.logsumexp(t_marginal, dim=0) - np.log(N)
+            log_mean_exps.append(lme.item())
+            
+        term_marginal = np.mean(log_mean_exps)
+        
+    return float(term_joint - term_marginal)
 
 def estimate_te_from_window(
     model: torch.nn.Module,
@@ -73,26 +97,52 @@ def estimate_te_from_window(
     n_shuffles: int,
     seed: int,
 ) -> dict[str, float]:
-    """Uoc luong TE(X->Y) tren 1 cua so qua phan ra 2 so hang o docstring module.
-
-    Args:
-        model: T_phi da train (dang shared-with-mask, xem amortized.py).
-        y_t, x_lag, y_lag: 3 mang shape (N,) cua cung 1 cua so.
-        n_shuffles: xem estimate_mi_from_window.
-        seed: seed cho shuffle.
-
-    Returns:
-        dict 3 khoa: "mi_full", "mi_reduced", "te" (= mi_full - mi_reduced).
-        Tra ve CA 2 SO HANG chu khong chi TE - de muc 5 cua PHASE_R_GUIDE.md do duoc
-        phuong sai tung so hang rieng.
-
-    TODO(ban tu code):
-        - mi_full: A = y_t, B = (x_lag, y_lag) [ghep 2 cot], mask cho biet "che do day du".
-        - mi_reduced: A = y_t, B = (y_lag) [cot x_lag bi zero-out], mask "che do rut gon".
-        - DUNG CUNG 1 seed shuffle cho ca 2 so hang -> sai so tuong quan duong, hieu
-          triet tieu bot nhieu (xem canh bao phuong sai o docstring module).
-        - te = mi_full - mi_reduced. KHONG kep (clip) ve >= 0 o day; neu muon bao cao
-          gia tri kep thi lam o tang phan tich va ghi ro, vi kep se lam sai lech uoc
-          luong bias mot cach he thong.
-    """
-    raise NotImplementedError
+    model.eval()
+    
+    ty_t = torch.tensor(y_t, dtype=torch.float32).unsqueeze(-1)
+    tx_lag = torch.tensor(x_lag, dtype=torch.float32).unsqueeze(-1)
+    ty_lag = torch.tensor(y_lag, dtype=torch.float32).unsqueeze(-1)
+    
+    N = ty_t.shape[0]
+    mask_full = torch.ones((N, 1), dtype=torch.float32)
+    mask_reduced = torch.zeros((N, 1), dtype=torch.float32)
+    
+    with torch.no_grad():
+        # Full mode
+        t_joint_full = model(ty_t, tx_lag, ty_lag, mask_full)
+        term_joint_full = t_joint_full.mean().item()
+        
+        # Reduced mode
+        t_joint_red = model(ty_t, tx_lag, ty_lag, mask_reduced)
+        term_joint_red = t_joint_red.mean().item()
+        
+        log_mean_exps_full = []
+        log_mean_exps_red = []
+        
+        rng = torch.Generator().manual_seed(seed)
+        for _ in range(n_shuffles):
+            perm = torch.randperm(N, generator=rng)
+            
+            # marginal full
+            tx_lag_perm = tx_lag[perm]
+            ty_lag_perm = ty_lag[perm]
+            
+            t_marg_full = model(ty_t, tx_lag_perm, ty_lag_perm, mask_full)
+            log_mean_exps_full.append((torch.logsumexp(t_marg_full, dim=0) - np.log(N)).item())
+            
+            # marginal reduced
+            t_marg_red = model(ty_t, tx_lag_perm, ty_lag_perm, mask_reduced)
+            log_mean_exps_red.append((torch.logsumexp(t_marg_red, dim=0) - np.log(N)).item())
+            
+        term_marg_full = np.mean(log_mean_exps_full)
+        term_marg_red = np.mean(log_mean_exps_red)
+        
+    mi_full = term_joint_full - term_marg_full
+    mi_reduced = term_joint_red - term_marg_red
+    te = mi_full - mi_reduced
+    
+    return {
+        "mi_full": float(mi_full),
+        "mi_reduced": float(mi_reduced),
+        "te": float(te)
+    }
