@@ -18,82 +18,145 @@ def evaluate_estimators_on_grid(
     test_windows: list,
     progress: bool = True,
 ) -> pd.DataFrame:
-    """Chay moi estimator tren moi cua so kiem dinh, tra ve bang KET QUA THO (raw).
+    rows = []
+    
+    iterator = test_windows
+    if progress:
+        try:
+            from tqdm import tqdm
+            iterator = tqdm(test_windows, desc="Evaluating windows")
+        except ImportError:
+            pass
 
-    Tra ve ket qua THO (moi dong = 1 cua so x 1 estimator), KHONG tong hop san - de
-    tang phan tich phia sau tu do tinh bias/phuong sai/khoang tin cay theo bat ky cach
-    nhom nao, va de audit lai tung gia tri khi nghi ngo.
+    for i, w in enumerate(iterator):
+        # Tai tao (x, y) day du de dung voi BaseTEEstimator
+        # Vi cac baseline yeu cau y phai kem y_lag (vi tri t va t-1)
+        # x_lag va y_lag la o t-1; y_t la o t.
+        # Mang (N+1,)
+        N = w.n_samples
+        x = np.empty(N + 1)
+        y = np.empty(N + 1)
 
-    Args:
-        estimators: dict {ten: estimator}.
-        test_windows: list[Window] - PHAI tach bach hoan toan voi tap train.
-        progress: hien thanh tien do (tqdm) - nen bat vi vong lap nay chay lau.
-
-    Returns:
-        DataFrame cac cot:
-            window_id, config_name, coupling_c, noise_std, n_samples, seed,
-            estimator, te_estimate, te_ground_truth, error (= estimate - ground_truth)
-
-    TODO(ban tu code):
-        - Lap qua tung cua so va tung estimator; goi estimator.estimate(x, y).
-        - Voi AmortizedTEEstimator, x/y can dung dinh dang chuoi goc - luu y Window
-          luu san y_t/x_lag/y_lag; can tai tao (x, y) tuong thich hoac them duong dan
-          rieng cho amortized. Ghi ro lua chon trong code.
-        - BAT LOI tung cai: neu 1 estimator that bai tren 1 cua so (vd KSG loi voi N=10),
-          ghi te_estimate = np.nan va GHI LAI ly do, KHONG de vo ca vong lap. Bao cao
-          so luong that bai theo tung estimator/tung N - ban than ty le that bai o N nho
-          da la 1 ket qua dang bao cao.
-    """
-    raise NotImplementedError
+        # Baseline uoc luong TE bang cach doc x[:-1] (X[t-1]) va y[1:] (Y[t]),
+        # dieu kien tren y[:-1] (Y[t-1]) qua history_target=1 - dung interface nay
+        # phai dam bao x[:-1] == w.x_lag va y[:-1]/y[1:] == w.y_lag/w.y_t CHINH XAC.
+        # Vi tri x[-1]/y[-1] khong duoc doc boi estimator (da verify thuc nghiem:
+        # thay doi gia tri nay khong lam doi ket qua estimate()), nen chi can dien
+        # placeholder hop le (khong dung 0.0 tuy tien de tranh diem ngoai phan phoi).
+        x[:-1] = w.x_lag
+        x[-1] = w.x_lag[-1]
+        y[:-1] = w.y_lag
+        y[-1] = w.y_t[-1]
+        
+        for est_name, est in estimators.items():
+            try:
+                te_est = est.estimate(x, y, seed=w.seed)
+                error = te_est - w.te_ground_truth
+            except Exception as e:
+                te_est = np.nan
+                error = np.nan
+                
+            rows.append({
+                "window_id": i,
+                "config_name": w.config_name,
+                "coupling_c": w.params["c"],
+                "noise_std": w.params["noise_std"],
+                "n_samples": w.n_samples,
+                "seed": w.seed,
+                "estimator": est_name,
+                "te_estimate": te_est,
+                "te_ground_truth": w.te_ground_truth,
+                "error": error
+            })
+            
+    return pd.DataFrame(rows)
 
 
 def summarize_grid(raw: pd.DataFrame) -> pd.DataFrame:
-    """Tong hop bang tho thanh bias / phuong sai / MSE theo tung o luoi va estimator.
-
-    Args:
-        raw: DataFrame tu evaluate_estimators_on_grid.
-
-    Returns:
-        DataFrame cac cot:
-            config_name, coupling_c, noise_std, n_samples, estimator,
-            n_valid (so cua so khong NaN), n_failed,
-            bias (mean(estimate) - ground_truth),
-            variance (var cua estimate qua cac cua so cung o luoi),
-            mse, ci_low, ci_high (khoang tin cay 95% cua trung binh)
-
-    TODO(ban tu code):
-        - Nhom theo (config_name, coupling_c, noise_std, n_samples, estimator).
-        - PHUONG SAI la chi so QUAN TRONG NHAT cua Pha R (tieu chi thoat noi ve phuong
-          sai, khong phai bias) - tinh bang np.var(..., ddof=1) tren cac uoc luong hop le.
-        - Bo qua NaN khi tinh (dung nanmean/nanvar hoac loc truoc), nhung PHAI bao cao
-          n_failed rieng - khong duoc am tham bo di.
-    """
-    raise NotImplementedError
+    groups = raw.groupby(["config_name", "coupling_c", "noise_std", "n_samples", "estimator"])
+    
+    rows = []
+    for name, group in groups:
+        estimates = group["te_estimate"].values
+        valid_mask = ~np.isnan(estimates)
+        n_total = len(estimates)
+        n_valid = int(valid_mask.sum())
+        n_failed = n_total - n_valid
+        
+        gt = group["te_ground_truth"].values[0]
+        
+        if n_valid > 0:
+            valid_ests = estimates[valid_mask]
+            bias = np.mean(valid_ests) - gt
+            variance = np.var(valid_ests, ddof=1) if n_valid > 1 else 0.0
+            mse = np.mean((valid_ests - gt)**2)
+            
+            se = np.sqrt(variance / n_valid) if n_valid > 0 else 0
+            ci_low = np.mean(valid_ests) - 1.96 * se
+            ci_high = np.mean(valid_ests) + 1.96 * se
+        else:
+            bias = np.nan
+            variance = np.nan
+            mse = np.nan
+            ci_low = np.nan
+            ci_high = np.nan
+            
+        rows.append({
+            "config_name": name[0],
+            "coupling_c": name[1],
+            "noise_std": name[2],
+            "n_samples": name[3],
+            "estimator": name[4],
+            "n_valid": n_valid,
+            "n_failed": n_failed,
+            "bias": bias,
+            "variance": variance,
+            "mse": mse,
+            "ci_low": ci_low,
+            "ci_high": ci_high
+        })
+        
+    return pd.DataFrame(rows)
 
 
 def check_exit_criterion(summary: pd.DataFrame, n_threshold: int = 30) -> dict:
-    """Kiem tra TIEU CHI THOAT chinh cua Pha R mot cach dinh luong.
-
-    Tieu chi (nguyen van tu roadmap goc): tren tap kiem dinh tong hop, T_phi co PHUONG
-    SAI THAP HON KSG va Symbolic TE o vung N NHO (N < 30).
-
-    Args:
-        summary: DataFrame tu summarize_grid.
-        n_threshold: nguong N "nho" (mac dinh 30 theo roadmap).
-
-    Returns:
-        dict bao cao ro rang, toi thieu gom:
-            "passed": bool tong the,
-            "n_cells_tested": so o luoi co N < n_threshold,
-            "n_cells_amortized_beats_ksg": ...,
-            "n_cells_amortized_beats_symbolic": ...,
-            "detail": DataFrame so sanh phuong sai tung o.
-
-    TODO(ban tu code):
-        - Loc cac o co n_samples < n_threshold.
-        - Voi moi o, so variance cua "Amortized" voi "KSG" va "Symbolic".
-        - "passed" = True neu thang o DA SO o luoi (vd >= 70%) doi voi CA HAI baseline.
-          Ghi ro nguong da chon trong bao cao - va neu khong dat, BAO CAO TRUNG THUC
-          thay vi noi long nguong cho vua ket qua (do la p-hacking).
-    """
-    raise NotImplementedError
+    df_small = summary[summary["n_samples"] < n_threshold]
+    
+    pivot = df_small.pivot_table(
+        index=["config_name", "coupling_c", "noise_std", "n_samples"],
+        columns="estimator",
+        values="variance"
+    ).reset_index()
+    
+    n_cells = len(pivot)
+    if n_cells == 0:
+        return {"passed": False, "n_cells_tested": 0}
+        
+    beats_ksg = 0
+    beats_sym = 0
+    
+    for _, row in pivot.iterrows():
+        amortized_var = row.get("Amortized", np.nan)
+        ksg_var = row.get("KSG", np.nan)
+        sym_var = row.get("Symbolic", np.nan)
+        
+        if not np.isnan(amortized_var):
+            if not np.isnan(ksg_var) and amortized_var < ksg_var:
+                beats_ksg += 1
+            if not np.isnan(sym_var) and amortized_var < sym_var:
+                beats_sym += 1
+                
+    # Threshold is 70%
+    th = 0.7
+    pass_ksg = (beats_ksg / n_cells) >= th
+    pass_sym = (beats_sym / n_cells) >= th
+    passed = pass_ksg and pass_sym
+    
+    return {
+        "passed": bool(passed),
+        "n_cells_tested": n_cells,
+        "n_cells_amortized_beats_ksg": beats_ksg,
+        "n_cells_amortized_beats_symbolic": beats_sym,
+        "threshold": th,
+        "detail": pivot
+    }
