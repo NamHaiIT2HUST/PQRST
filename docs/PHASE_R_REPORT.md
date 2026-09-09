@@ -172,19 +172,40 @@ Chạy tuần tự từng ô. Mục 2 của notebook sẽ tự in lại ước t
 
 **Ý nghĩa:** giả thuyết "ít tham số = tổng quát tốt hơn ở N nhỏ" — lý do chính đáng nhất để kỳ vọng mạch lượng tử (cũng ít tham số) giúp được ở Nhịp 2 — **bị bác bỏ bởi bằng chứng thực nghiệm này**. Vấn đề ở N=10-20 nhiều khả năng không nằm ở dung lượng mô hình, mà ở **nhiễu Monte Carlo không thể giảm vốn có của công thức DV bound** khi số điểm dữ liệu quá ít (ước lượng `logsumexp` trên chỉ 10-20 điểm có phương sai lớn bất kể mạng "khéo" tới đâu) — đây là giới hạn của chính phương pháp đánh giá, không phải của kiến trúc mạng.
 
-## 9. Khuyến nghị hướng tiếp theo
+## 9. Vòng thử nghiệm 2 — dữ liệu phi tuyến (periodic coupling)
 
-Với kết quả null này, 2 lựa chọn hợp lý:
+Giả thuyết cần kiểm định: "KSG chỉ mạnh trên VAR Gaussian tuyến tính (sân nhà của k-NN cho phân phối trơn) — trên dữ liệu phi tuyến/tuần hoàn (gần thực tế tim-não hơn), Amortized có thể có lợi thế rõ hơn."
 
-**(a) Chấp nhận và dùng estimator lai (hybrid) — khuyến nghị, hiệu quả nhất về thời gian.** Điểm giao cắt N≈30 rất rõ và ổn định qua cả 2 lần thử nghiệm (mạng lớn, mạng nhỏ). Có thể dùng thẳng: **KSG cho N<30, Amortized cho N≥30** — tận dụng đúng điểm mạnh của từng phương pháp, không cần nghiên cứu thêm, và về khoa học vẫn là 1 kết quả tốt (amortized thắng rõ ở vùng N vừa/lớn — vẫn có giá trị công bố).
+Đã chạy đủ 3 notebook (`phase_r2_periodic_02/03/04`) trên `periodic_coupling.py` (lưới 4 coupling × 2 noise × 6 N, cùng kiến trúc `[128,128,64]` như bản chính). Huấn luyện hội tụ tốt (val loss std=0.0042), không lỗi NaN trong 28.800 phép đo đánh giá.
 
-**(b) Đầu tư thêm — thử trên `var_nonlinear.py`/`periodic_coupling.py` (đã có sẵn từ Pha P) thay vì chỉ VAR tuyến tính Gaussian.** KSG rất mạnh trên đúng bài toán Gaussian tuyến tính (sân nhà của k-NN cho phân phối trơn). Có thể trên dữ liệu phi tuyến, khoảng cách sẽ khác hẳn. Đây là hướng còn chưa thử, nhưng tốn công hơn (phải mở rộng `corpus.py` sang 2 generator đó, sinh lại corpus, train lại).
+| | VAR tuyến tính Gaussian | Periodic coupling |
+|---|---|---|
+| Thắng KSG (N<30) | 9/30 (30%) | **0/16 (0%)** |
+| Thắng Symbolic (N<30) | 28/30 | 7/16 |
+| Thắng Binning (N<30) | 30/30 | 14/16 |
+
+![variance periodic](../results/figures/phase_r2_periodic_variance_vs_n.png)
+
+**Kết quả: giả thuyết BỊ BÁC BỎ theo chiều ngược lại — KSG mạnh HƠN trên dữ liệu phi tuyến, không phải yếu hơn.** Amortized thua KSG ở *toàn bộ* 16 ô N<30 (tệ hơn cả kết quả 9/30 trên dữ liệu tuyến tính). Điểm giao cắt vẫn tồn tại (Amortized vượt KSG từ khoảng N≈50 trở lên, thắng rõ ở N=100,200) — cấu trúc "thắng ở N lớn, thua ở N nhỏ" là **hiện tượng ổn định, lặp lại trên 2 loại dữ liệu khác nhau**, nhưng mức độ thua ở N nhỏ lại nặng hơn trên dữ liệu khó hơn, ngược với kỳ vọng ban đầu.
+
+**Diễn giải:** lợi thế của KSG ở N nhỏ nhiều khả năng là đặc tính chung của phương pháp k-NN (thích nghi cục bộ, ít giả định về dạng phân phối) khi có ít điểm dữ liệu, **không** đặc thù cho phân phối Gaussian như giả thuyết ban đầu. Kết hợp với ablation mạng nhỏ (mục 8, cũng null), 2 lần kiểm định độc lập đều cho thấy: nút thắt ở N=10-20 nằm ở **chính công thức DV bound/logsumexp khi có quá ít điểm** (nhiễu Monte Carlo không thể giảm), không nằm ở dung lượng mạng hay dạng phân phối dữ liệu. Đây là giới hạn có vẻ khá cơ bản của phương pháp, khó sửa bằng điều chỉnh kiến trúc/dữ liệu train.
+
+## 10. Khuyến nghị hướng tiếp theo (đã cập nhật sau 2 vòng kiểm định)
+
+Sau 2 thử nghiệm độc lập đều cho kết quả null (không cải thiện được N=10-20 bằng thay đổi dung lượng mạng hay loại dữ liệu train), khuyến nghị:
+
+**(a) Chấp nhận và dùng estimator lai (hybrid) — khuyến nghị mạnh.** Điểm giao cắt (khoảng N=30-50) là hiện tượng ổn định qua **3 lần thử nghiệm độc lập** (mạng lớn, mạng nhỏ, dữ liệu phi tuyến). Dùng **KSG cho N<30-50, Amortized cho N lớn hơn** — không cần nghiên cứu thêm, và về khoa học đây vẫn là kết quả tốt (Amortized thắng rõ và ổn định ở vùng N vừa/lớn trên cả 2 loại dữ liệu — đủ để công bố).
+
+**(b) Nếu vẫn muốn tiếp tục nghiên cứu (không phải việc rẻ/nhanh nữa):** hướng còn lại là thay đổi chính **công thức ước lượng** ở N nhỏ (không phải kiến trúc mạng) — ví dụ dùng control-variate, hoặc 1 bound khác có phương sai thấp hơn ở N nhỏ (NWJ, SMILE...). Đây là hướng nghiên cứu mới, không còn là "thử nhanh trước Nhịp 2" nữa.
 
 **(c) Hiệu chỉnh bias hậu-nghiệm** (mục 6.1, rẻ, không train lại) — cải thiện MSE thực tế nhưng không đổi tiêu chí thoát dựa trên phương sai.
 
-## 10. Việc còn lại
+**Về Nhịp 2 (lượng tử):** cả 2 vòng kiểm định đều làm suy yếu lý do "ít tham số sẽ giúp ở N nhỏ" — mạch lượng tử ít tham số nhiều khả năng gặp đúng giới hạn tương tự. Nếu vẫn triển khai Nhịp 2, nên đặt kỳ vọng ở đúng vùng N vừa/lớn (nơi Amortized đã chứng minh thắng ổn định), không phải vùng N<30.
+
+## 11. Việc còn lại
 
 - [x] Sửa lỗi `grid.py`, thêm test hồi quy, chạy lại toàn bộ 72.000 phép đo.
 - [x] Sửa `train_amortized` để deploy trung bình trọng số k epoch cuối, có test xác nhận.
-- [x] Chạy ablation mạng nhỏ — kết quả null, đã phân tích ở mục 8.
-- [ ] **Chờ quyết định chủ dự án:** chọn (a), (b), hoặc (c) ở mục 9 — hoặc dừng ở đây và qua Pha S với kết quả hiện tại (khuyến nghị nếu ưu tiên tiến độ).
+- [x] Chạy ablation mạng nhỏ — kết quả null (mục 8).
+- [x] Chạy thử nghiệm dữ liệu phi tuyến (periodic coupling) — kết quả null theo chiều ngược lại (mục 9).
+- [ ] **Chờ quyết định chủ dự án:** chọn (a), (b), hoặc (c) ở mục 10 — khuyến nghị (a) để qua Pha S, vì 2 vòng đầu tư thêm đều không tìm được cải thiện rẻ cho N nhỏ.
