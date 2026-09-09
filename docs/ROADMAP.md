@@ -185,7 +185,7 @@ Chi tiết đầy đủ (kiến trúc mạng, công thức loss, spec bài toán
 - [x] Khung thư mục repo dựng xong (xem `README.md` ở gốc repo).
 - [x] **Pha P xong** — 3 bộ sinh dữ liệu tổng hợp, 3 baseline (KSG/binning/symbolic), script validate, đã qua 1 vòng review sửa lỗi công thức ground-truth. Chi tiết: [`PHASE_P_REPORT.md`](PHASE_P_REPORT.md).
 - [x] **Pha Q xong** — `StatisticsNetwork`, `donsker_varadhan_loss`, `shuffle_batch`, `train_mine` implement xong, smoke test MI(X[t-1];Y[t]) đạt sai số 0.8–7.6% qua nhiều seed (ngưỡng 20%), 20/20 test pass, không phát hiện lỗi khi review. EMA bias correction không dùng (quyết định có chủ đích, để dành Pha R). Chi tiết: [`PHASE_Q_GUIDE.md`](PHASE_Q_GUIDE.md).
-- [x] Tài liệu hướng dẫn Pha R chi tiết ([`PHASE_R_GUIDE.md`](PHASE_R_GUIDE.md)) + khung code (stub trong `src/pqrst/data/synthetic/corpus.py`, `src/pqrst/estimators/mine/{conditional,amortized}.py`, `src/pqrst/evaluation/grid.py`, 4 notebook `notebooks/phase_r_*.ipynb`, `tests/test_corpus_and_conditional.py`).
-- [ ] Pha R — code thật + chạy 4 notebook (việc tiếp theo, xem checklist trong `PHASE_R_GUIDE.md` mục 7).
+- [x] **Pha R xong** — corpus 27k/4k/18k cửa sổ, `MaskedStatisticsNetwork` train xong, đánh giá trên lưới đầy đủ. Review phát hiện 1 lỗi chặn (`grid.py` lệch chỉ số x khi dựng lại dữ liệu, ảnh hưởng cả 4 estimator) — đã sửa và chạy lại. Tiêu chí thoát chính thức (thắng KSG ở N<30) **chưa đạt** (9/30), nhưng phát hiện Amortized thắng rõ và cách biệt tăng dần từ N≈30 trở lên — điểm giao cắt đúng tại ranh giới tiêu chí. Chi tiết: [`PHASE_R_REPORT.md`](PHASE_R_REPORT.md).
+- [ ] Pha S — pipeline 4 bộ dữ liệu sinh lý thật + sanity check (việc tiếp theo). Có thể xem xét 1 vòng cải thiện N nhỏ trước (xem PHASE_R_REPORT.md mục 6) tuỳ quyết định của chủ dự án.
 
 Tài liệu tạp chí mục tiêu và bảng rủi ro theo nhịp giữ nguyên như bản gốc của mentor — không lặp lại ở đây, xem [`PQRST_Roadmap_goc.md`](PQRST_Roadmap_goc.md).
