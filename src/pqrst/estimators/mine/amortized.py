@@ -188,30 +188,41 @@ def train_amortized(
         4. Cuoi moi epoch: danh gia tren val_windows (torch.no_grad), dung
            config.eval_n_shuffles lan shuffle - KHONG dung 1 lan.
         5. Early stopping theo val loss voi config.patience.
-        6. UOC LUONG CUOI CUNG: lay TRUNG BINH val metric cua
-           config.final_estimate_last_k_epochs epoch CUOI (sau khi da hoi tu), KHONG
-           lay "epoch tot nhat trong tat ca". Day la sua loi selection-bias da phat
-           hien khi review Pha Q (xem docs/PHASE_Q_REPORT.md muc 4) - dung lap lai.
+        6. MODEL DEPLOY CUOI CUNG = TRUNG BINH THAM SO (weight averaging) cua
+           config.final_estimate_last_k_epochs epoch CUOI DA CHAY (khong phai epoch
+           co val loss thap nhat trong toan bo qua trinh). Day la sua loi
+           selection-bias da phat hien khi review ca Pha Q va lan review dau cua Pha R
+           (xem docs/PHASE_Q_REPORT.md muc 4 va docs/PHASE_R_REPORT.md muc 4) - dung
+           quay lai kieu "best-of-all-epochs".
     """
     torch.manual_seed(config.seed)
-    
+
     model = MaskedStatisticsNetwork(hidden_dims=config.hidden_dims)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
-    
+
+    from collections import deque
     from pqrst.estimators.mine.losses import shuffle_batch, donsker_varadhan_loss
-    
+
     def prep_window(w):
         ty_t = torch.tensor(w.y_t, dtype=torch.float32).unsqueeze(-1)
         tx_lag = torch.tensor(w.x_lag, dtype=torch.float32).unsqueeze(-1)
         ty_lag = torch.tensor(w.y_lag, dtype=torch.float32).unsqueeze(-1)
         return ty_t, tx_lag, ty_lag
-        
+
     train_loss_history = []
     val_loss_history = []
-    
+
     best_val_loss = float('inf')
-    best_model_state = None
     patience_counter = 0
+
+    # Sua loi selection-bias phat hien khi review (best-of-all-epochs khong khop spec):
+    # thay vi luu 1 state_dict "tot nhat", giu 1 buffer k state_dict CUA k EPOCH GAN
+    # NHAT (khong quan tam epoch nao "tot nhat"), roi TRUNG BINH THAM SO (weight
+    # averaging) cua ca k epoch do de lam model deploy cuoi cung. Early stopping
+    # (best_val_loss/patience) van dung de quyet dinh DUNG LUC NAO, nhung khong con
+    # quyet dinh model nao duoc deploy.
+    k_tail = config.final_estimate_last_k_epochs
+    tail_state_dicts = deque(maxlen=k_tail)
     
     # Eval logic to avoid duplication
     def evaluate(windows, n_shuffles):
@@ -283,29 +294,35 @@ def train_amortized(
         
         val_loss = evaluate(val_windows, config.eval_n_shuffles)
         val_loss_history.append(val_loss)
-        
+
+        tail_state_dicts.append({k: v.cpu().clone() for k, v in model.state_dict().items()})
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
-            
+
         if patience_counter >= config.patience:
             break
-            
-    if best_model_state is not None:
-        model.load_state_dict(best_model_state)
-        
+
+    # Deploy = TRUNG BINH THAM SO cua k epoch cuoi da chay (khong phai best-of-all-epochs).
+    # Neu train dung < k_tail epoch (vd fail som), dung tat ca epoch da co.
+    averaged_state = {}
+    for key in tail_state_dicts[0].keys():
+        stacked = torch.stack([sd[key].float() for sd in tail_state_dicts], dim=0)
+        averaged_state[key] = stacked.mean(dim=0)
+    model.load_state_dict(averaged_state)
+
     k = config.final_estimate_last_k_epochs
     final_val_loss = np.mean(val_loss_history[-k:]) if len(val_loss_history) >= k else np.mean(val_loss_history)
-        
+
     estimator = AmortizedTEEstimator(model, config)
     history = {
         "train_loss_history": train_loss_history,
         "val_loss_history": val_loss_history,
         "final_val_loss": final_val_loss,
-        "best_epoch": len(val_loss_history) - patience_counter - 1
+        "n_epochs_averaged": len(tail_state_dicts),
     }
-    
+
     return estimator, history

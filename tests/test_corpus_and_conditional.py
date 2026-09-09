@@ -211,3 +211,94 @@ class TestGridReconstruction:
         te_via_grid = raw.iloc[0]["te_estimate"]
 
         assert abs(te_via_grid - te_direct) < 1e-9
+
+
+class TestTrainAmortized:
+    """Bao ve hanh vi 'deploy = trung binh tham so k epoch cuoi' (sua loi
+    selection-bias phat hien khi review - xem docs/PHASE_R_REPORT.md muc 4).
+    Chua co test nao goi truc tiep train_amortized() truoc day - day la khoang trong
+    coverage thu 2 phat hien khi review (khoang trong thu 1 la grid.py, da vasa)."""
+
+    def _make_small_corpus(self, seed=1):
+        from pqrst.data.synthetic.corpus import generate_corpus, split_corpus_by_seed
+        corpus = generate_corpus([0.3, 0.6], [0.3, 0.5], [10, 20], 20, 0.5, 0.5, base_seed=seed)
+        return split_corpus_by_seed(corpus, 0.2, split_seed=seed)
+
+    def test_runs_and_returns_valid_estimator(self):
+        from pqrst.estimators.mine.amortized import train_amortized, AmortizedTrainConfig
+        from pqrst.baselines.base import BaseTEEstimator
+
+        train_w, val_w = self._make_small_corpus()
+        cfg = AmortizedTrainConfig(hidden_dims=[16], windows_per_batch=8, max_epochs=5,
+                                    patience=5, eval_n_shuffles=3,
+                                    final_estimate_last_k_epochs=3, seed=1)
+        est, hist = train_amortized(train_w, val_w, cfg)
+
+        assert isinstance(est, BaseTEEstimator)
+        assert len(hist["val_loss_history"]) == 5
+        assert hist["n_epochs_averaged"] == 3
+
+        x = np.random.default_rng(0).normal(size=15)
+        y = np.random.default_rng(1).normal(size=15)
+        te = est.estimate(x, y, seed=42)
+        assert np.isfinite(te)
+
+    def test_deployed_weights_are_average_of_last_k_epochs(self):
+        """Verify truc tiep TOAN HOC: trong so model deploy phai bang trung binh
+        cong cua k state_dict cuoi cung - khong duoc la 1 epoch don le (best-of-all)."""
+        import copy
+        from pqrst.estimators.mine.amortized import (
+            train_amortized, AmortizedTrainConfig, MaskedStatisticsNetwork,
+        )
+        from pqrst.estimators.mine.losses import donsker_varadhan_loss
+        import torch
+
+        train_w, val_w = self._make_small_corpus(seed=2)
+        cfg = AmortizedTrainConfig(hidden_dims=[8], windows_per_batch=8, max_epochs=4,
+                                    patience=10, eval_n_shuffles=2,
+                                    final_estimate_last_k_epochs=4, seed=3)
+
+        # Chay lai chinh xac cung logic train nhu train_amortized, tu thu thap state_dict
+        # cua tung epoch, roi tu tinh trung binh doc lap de doi chieu.
+        torch.manual_seed(cfg.seed)
+        model = MaskedStatisticsNetwork(hidden_dims=cfg.hidden_dims)
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+
+        def prep(w):
+            return (torch.tensor(w.y_t, dtype=torch.float32).unsqueeze(-1),
+                    torch.tensor(w.x_lag, dtype=torch.float32).unsqueeze(-1),
+                    torch.tensor(w.y_lag, dtype=torch.float32).unsqueeze(-1))
+
+        collected_states = []
+        for epoch in range(cfg.max_epochs):
+            rng = np.random.default_rng(cfg.seed + epoch)
+            perm = rng.permutation(len(train_w))
+            for i in range(0, len(train_w), cfg.windows_per_batch):
+                idx = perm[i:i + cfg.windows_per_batch]
+                optimizer.zero_grad()
+                group_losses = []
+                for j in idx:
+                    ty_t, tx_lag, ty_lag = prep(train_w[j])
+                    N = ty_t.shape[0]
+                    for mask_val in (1.0, 0.0):
+                        mask = torch.full((N, 1), mask_val)
+                        t_joint = model(ty_t, tx_lag, ty_lag, mask)
+                        p = torch.randperm(N)
+                        t_marg = model(ty_t, tx_lag[p], ty_lag[p], mask)
+                        group_losses.append(donsker_varadhan_loss(t_joint, t_marg))
+                if group_losses:
+                    torch.stack(group_losses).mean().backward()
+                    optimizer.step()
+            collected_states.append({k: v.cpu().clone() for k, v in model.state_dict().items()})
+
+        expected_avg = {
+            key: torch.stack([sd[key].float() for sd in collected_states], dim=0).mean(dim=0)
+            for key in collected_states[0].keys()
+        }
+
+        # train_amortized() voi CUNG seed/config phai cho ra dung trong so trung binh nay.
+        est, hist = train_amortized(train_w, val_w, cfg)
+        deployed = est.model.state_dict()
+
+        for key in expected_avg:
+            assert torch.allclose(deployed[key], expected_avg[key], atol=1e-5), f"mismatch at {key}"
