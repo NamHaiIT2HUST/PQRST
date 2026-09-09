@@ -131,9 +131,34 @@ KSG là estimator **nhất quán (consistent)** — bias co về 0 đúng lý th
 
 ---
 
-## 7. Việc còn lại / khuyến nghị
+## 7. Đã triển khai tiếp — vòng cải thiện N nhỏ (theo quyết định đầu tư thêm)
+
+Chủ dự án quyết định đầu tư thêm để cải thiện vùng N=10-20 trước khi qua Pha S. Đã làm:
+
+**7.1. Sửa `train_amortized` — deploy đúng trung bình trọng số k epoch cuối**
+Mục 4 chỉ ra model deploy thực tế vẫn là best-of-all-epochs (không khớp mô tả báo cáo). Đã sửa: model deploy giờ là **trung bình tham số (weight averaging)** của `final_estimate_last_k_epochs` epoch cuối cùng đã chạy — không còn chọn theo epoch có val loss thấp nhất. Đã verify bằng test (`TestTrainAmortized` trong `test_corpus_and_conditional.py`, đối chiếu trực tiếp bằng toán học rằng trọng số deploy = trung bình đúng k state_dict cuối). **Checkpoint chính hiện có (`phi_amortized.pt`) chưa được train lại với logic mới** — số liệu ở mục 5 vẫn dùng checkpoint cũ (tác động thực tế thấp, đã giải thích ở mục 4); logic mới sẽ áp dụng cho các lần train tiếp theo, bao gồm ablation dưới đây.
+
+**7.2. Ablation mạng nhỏ — kiểm định giả thuyết trước khi đầu tư Nhịp 2 (mục 6)**
+Đã tạo `configs/mine/amortized_small.yaml` (chỉ đổi `hidden_dims: [16,16]` so với bản chính `[128,128,64]`, mọi thứ khác giữ nguyên — ablation sạch, đổi đúng 1 biến) và `notebooks/phase_r_05_ablation_small_network.ipynb` (code đầy đủ, không phải stub). Notebook tái dùng corpus đã sinh từ notebook 01 (không cần sinh lại), train mạng nhỏ, chỉ đánh giá lại đúng estimator mới trên tập test (không chạy lại KSG/Binning/Symbolic vì kết quả các baseline đó không đổi), rồi so trực tiếp phương sai ở N<30 giữa mạng lớn/mạng nhỏ/3 baseline.
+
+Đã đo thử 2 epoch trên đúng corpus thật: **~77s/epoch** (so với ~186s/epoch của mạng lớn) → ước tính **~2,1 giờ** cho đủ 100 epoch — nhanh hơn ~2.4 lần so với lần train chính.
+
+**Cần chủ dự án chạy** (không tự chạy hộ theo yêu cầu — báo lại kết quả để review):
+```bash
+.\.venv\Scripts\Activate.ps1
+```
+```bash
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"
+```
+```bash
+jupyter lab notebooks/phase_r_05_ablation_small_network.ipynb
+```
+Chạy tuần tự từng ô. Mục 2 của notebook sẽ tự in lại ước tính thời gian trên máy bạn trước khi chạy full ở mục 3 — kiểm tra con số đó hợp lý (không phải hàng chục giờ) rồi mới chạy tiếp.
+
+## 8. Việc còn lại / khuyến nghị
 
 - [x] Sửa lỗi `grid.py`, thêm test hồi quy, chạy lại toàn bộ 72.000 phép đo.
-- [ ] (Tuỳ chọn, không chặn) Sửa `train_amortized` để deploy trung bình trọng số/dự đoán k epoch cuối thay vì best-of-all-epochs — làm khi train lại lần sau.
-- [ ] (Tuỳ chọn) Thử hiệu chỉnh bias hậu-nghiệm cho Amortized (mục 6.1) — rẻ, không cần train lại, có thể làm ngay trên checkpoint hiện có.
-- [ ] (Cho quyết định của chủ dự án) Chọn 1 trong 2: (a) chấp nhận Pha R với kết quả "thắng rõ từ N≥30, cần cải thiện thêm ở N=10-20" làm nền cho Pha S, hoặc (b) đầu tư thêm 1 vòng cải thiện N nhỏ (mục 6.2) trước khi qua Pha S.
+- [x] Sửa `train_amortized` để deploy trung bình trọng số k epoch cuối, có test xác nhận.
+- [x] Chuẩn bị ablation mạng nhỏ (`amortized_small.yaml` + notebook 05) — **chờ chủ dự án chạy notebook 05**.
+- [ ] (Tuỳ chọn) Thử hiệu chỉnh bias hậu-nghiệm cho Amortized (mục 6.1) — rẻ, không cần train lại, có thể làm ngay trên checkpoint hiện có, nhưng không ảnh hưởng tiêu chí thoát (dựa trên phương sai, không phải MSE) — làm sau nếu cần cho báo cáo cuối, không chặn.
+- [ ] Sau khi có kết quả notebook 05: nếu mạng nhỏ thắng rõ hơn ở N<30 → có cơ sở mạnh để đầu tư Nhịp 2 (lượng tử); nếu không → cần tìm hướng khác (mục 6.2, 6.3) trước khi đầu tư Nhịp 2.
