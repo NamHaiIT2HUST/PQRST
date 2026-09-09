@@ -1,0 +1,35 @@
+# Cau hinh sinh corpus tu periodic_coupling.py cho vong thu nghiem "du lieu phi tuyen"
+# (docs/PHASE_R_REPORT.md muc 9, phuong an b) - kiem tra loi the KSG o N nho co dac thu
+# rieng cho VAR tuyen tinh Gaussian hay khong.
+#
+# Luoi nho hon ban VAR chinh (Pha R goc) de kiem soat thoi gian train cho vong thu
+# nghiem dau tien: 4 coupling x 2 noise x 6 N x 200 = 9,600 cua so train+val.
+
+omega_x: 0.3
+omega_y: 0.31   # gan bang omega_x - de quan sat phase-locking khi co coupling
+
+coupling_values: [0.0, 0.3, 0.6, 0.9]
+noise_values: [0.1, 0.3]
+n_values: [10, 20, 30, 50, 100, 200]
+n_windows_per_cell: 200
+
+# Pseudo ground-truth TE (KSG o N=200,000, seed=42) - da tinh san, xem
+# scripts hoac lich su chay - c=0.0 dung gia tri ly thuyet 0.0 (doc lap tuyet doi),
+# giong quy uoc da dung o Pha P (xem configs/synthetic/periodic_coupling.yaml).
+pseudo_ground_truths:
+  - {c: 0.0, noise_std: 0.1, te: 0.0}
+  - {c: 0.0, noise_std: 0.3, te: 0.0}
+  - {c: 0.3, noise_std: 0.1, te: 0.135980}
+  - {c: 0.3, noise_std: 0.3, te: 0.035753}
+  - {c: 0.6, noise_std: 0.1, te: 0.249306}
+  - {c: 0.6, noise_std: 0.3, te: 0.108777}
+  - {c: 0.9, noise_std: 0.1, te: 0.364130}
+  - {c: 0.9, noise_std: 0.3, te: 0.197035}
+
+base_seed: 2000000       # khong trung voi mien seed cua corpus VAR (100000-126999,
+                          # 900000-917999) va cac ablation khac - tranh trung lap seed.
+val_fraction: 0.15
+split_seed: 11
+
+test_base_seed: 2900000
+test_n_windows_per_cell: 150

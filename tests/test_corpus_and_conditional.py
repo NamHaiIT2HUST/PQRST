@@ -11,7 +11,9 @@ import tempfile
 import os
 import shutil
 from pqrst.data.synthetic.var_linear_gaussian import generate_var_linear_gaussian, compute_var_linear_ground_truths
-from pqrst.data.synthetic.corpus import generate_corpus, split_corpus_by_seed, save_corpus, load_corpus
+from pqrst.data.synthetic.corpus import (
+    generate_corpus, generate_corpus_periodic, split_corpus_by_seed, save_corpus, load_corpus,
+)
 from pqrst.estimators.mine.amortized import MaskedStatisticsNetwork, AmortizedTrainConfig, AmortizedTEEstimator
 from pqrst.estimators.mine.conditional import estimate_mi_from_window, estimate_te_from_window
 from pqrst.estimators.mine.network import StatisticsNetwork
@@ -86,6 +88,69 @@ class TestCorpus:
             assert len(corpus) == len(loaded)
             np.testing.assert_array_equal(corpus[0].y_t, loaded[0].y_t)
             assert corpus[0].seed == loaded[0].seed
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestCorpusPeriodic:
+    """generate_corpus_periodic (vong thu nghiem du lieu phi tuyen, xem
+    docs/PHASE_R_REPORT.md muc 9)."""
+
+    def test_corpus_size_matches_grid(self):
+        pgt = {(0.0, 0.1): 0.0, (0.3, 0.1): 0.05}
+        corpus = generate_corpus_periodic(
+            coupling_values=[0.0, 0.3], noise_values=[0.1], n_values=[10, 20],
+            n_windows_per_cell=3, omega_x=0.3, omega_y=0.31,
+            pseudo_ground_truths=pgt, base_seed=1,
+        )
+        assert len(corpus) == 2 * 1 * 2 * 3
+
+    def test_ground_truth_zero_when_uncoupled(self):
+        pgt = {(0.0, 0.1): 0.0, (0.3, 0.1): 0.05}
+        corpus = generate_corpus_periodic(
+            coupling_values=[0.0, 0.3], noise_values=[0.1], n_values=[10],
+            n_windows_per_cell=2, omega_x=0.3, omega_y=0.31,
+            pseudo_ground_truths=pgt, base_seed=1,
+        )
+        uncoupled = [w for w in corpus if w.params["c"] == 0.0]
+        assert all(w.te_ground_truth == 0.0 for w in uncoupled)
+
+    def test_all_seeds_unique(self):
+        pgt = {(0.0, 0.1): 0.0, (0.3, 0.1): 0.05, (0.6, 0.1): 0.1}
+        corpus = generate_corpus_periodic(
+            coupling_values=[0.0, 0.3, 0.6], noise_values=[0.1], n_values=[10, 20],
+            n_windows_per_cell=3, omega_x=0.3, omega_y=0.31,
+            pseudo_ground_truths=pgt, base_seed=1,
+        )
+        seeds = [w.seed for w in corpus]
+        assert len(set(seeds)) == len(seeds)
+
+    def test_mi_ground_truths_are_nan(self):
+        """Khong co baseline MI da bien de tinh pseudo ground-truth cho mi_full/
+        mi_reduced tren du lieu periodic - phai la NaN (khong duoc bay bia gia tri)."""
+        pgt = {(0.3, 0.1): 0.05}
+        corpus = generate_corpus_periodic(
+            coupling_values=[0.3], noise_values=[0.1], n_values=[10],
+            n_windows_per_cell=1, omega_x=0.3, omega_y=0.31,
+            pseudo_ground_truths=pgt, base_seed=1,
+        )
+        assert np.isnan(corpus[0].mi_full_ground_truth)
+        assert np.isnan(corpus[0].mi_reduced_ground_truth)
+
+    def test_save_load_roundtrip_preserves_nan(self):
+        pgt = {(0.3, 0.1): 0.05}
+        corpus = generate_corpus_periodic(
+            coupling_values=[0.3], noise_values=[0.1], n_values=[10],
+            n_windows_per_cell=1, omega_x=0.3, omega_y=0.31,
+            pseudo_ground_truths=pgt, base_seed=1,
+        )
+        tmpdir = tempfile.mkdtemp()
+        try:
+            p = os.path.join(tmpdir, "periodic_corpus.npz")
+            save_corpus(corpus, p)
+            loaded = load_corpus(p)
+            assert np.isnan(loaded[0].mi_full_ground_truth)
+            np.testing.assert_array_equal(corpus[0].y_t, loaded[0].y_t)
         finally:
             shutil.rmtree(tmpdir)
 

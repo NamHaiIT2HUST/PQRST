@@ -224,5 +224,78 @@ def load_corpus(path: str) -> list[Window]:
             seed=m["seed"]
         )
         windows.append(w)
-        
+
+    return windows
+
+
+def generate_corpus_periodic(
+    coupling_values: list[float],
+    noise_values: list[float],
+    n_values: list[int],
+    n_windows_per_cell: int,
+    omega_x: float,
+    omega_y: float,
+    pseudo_ground_truths: dict,
+    base_seed: int,
+) -> list[Window]:
+    """Sinh corpus tu bo sinh ghep noi tuan hoan (periodic_coupling.py), song song voi
+    generate_corpus (VAR tuyen tinh) nhung danh cho vong thu nghiem "du lieu phi tuyen"
+    (xem docs/PHASE_R_REPORT.md muc 9, phuong an (b)) - kiem tra xem loi the cua KSG
+    o N nho co dac thu cho VAR tuyen tinh Gaussian (san nha cua k-NN) hay khong.
+
+    KHAC BIET so voi generate_corpus:
+        - Khong co cong thuc dong cho TE -> pseudo_ground_truths PHAI duoc tinh SAN
+          (KSG o N=200_000, xem docs/PHASE_P_GUIDE.md muc 2.3) va truyen vao qua dict
+          {(coupling_k, noise_std): te_pseudo, ...} - KHONG tinh lai trong ham nay.
+        - mi_full_ground_truth/mi_reduced_ground_truth KHONG co san (khong co baseline
+          MI da bien trong repo) -> dat = float('nan'). Cac ham dung Window (grid.py)
+          chi doc te_ground_truth nen khong anh huong; chi khong dung duoc cho phan
+          tich phuong sai tung so hang (uc P.5.3 kieu VAR) voi corpus nay.
+
+    Args:
+        coupling_values, noise_values, n_values, n_windows_per_cell: xem generate_corpus.
+        omega_x, omega_y: tan so goc rieng, GIU CO DINH (giong Pha P).
+        pseudo_ground_truths: dict {(coupling_k, noise_std): te_pseudo_gt}, PHAI co du
+            moi cap (c, noise) trong coupling_values x noise_values.
+        base_seed: seed goc, seed tung cua so PHAI duy nhat (giong generate_corpus).
+
+    Returns:
+        list[Window].
+    """
+    from pqrst.data.synthetic.periodic_coupling import generate_periodic_coupling
+
+    windows = []
+    seed_counter = base_seed
+
+    for c in coupling_values:
+        for noise_std in noise_values:
+            te_gt = pseudo_ground_truths[(c, noise_std)]
+            config_name = f"periodic_k_{c}_noise_{noise_std}"
+
+            for N in n_values:
+                for _ in range(n_windows_per_cell):
+                    current_seed = seed_counter
+                    seed_counter += 1
+
+                    x, y = generate_periodic_coupling(
+                        n_samples=N + 1,
+                        omega_x=omega_x, omega_y=omega_y,
+                        coupling_k=c, noise_std=noise_std, seed=current_seed,
+                    )
+
+                    win = Window(
+                        y_t=y[1:],
+                        x_lag=x[:-1],
+                        y_lag=y[:-1],
+                        n_samples=N,
+                        config_name=config_name,
+                        params={"omega_x": omega_x, "omega_y": omega_y,
+                                "c": c, "noise_std": noise_std},
+                        te_ground_truth=te_gt,
+                        mi_full_ground_truth=float("nan"),
+                        mi_reduced_ground_truth=float("nan"),
+                        seed=current_seed,
+                    )
+                    windows.append(win)
+
     return windows
