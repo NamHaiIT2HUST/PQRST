@@ -1,0 +1,20 @@
+# Cau hinh ablation: mang T_phi NHO HON NHIEU so voi ban chinh (amortized.yaml).
+# Muc dich: kiem dinh gia thuyet "it tham so = tong quat tot hon o N nho" (xem
+# docs/PHASE_R_REPORT.md muc 6) TRUOC KHI dau tu dung mach luong tu o Nhip 2 - vi mach
+# luong tu (6-8 qubit x 3-5 lop) co so tham so RAT nho, tuong tu huong thu nghiem nay.
+#
+# CHI DOI DUY NHAT 1 BIEN (hidden_dims) so voi amortized.yaml, moi thu khac giu nguyen
+# de phep so sanh la mot ablation sach (isolate dung 1 nguyen nhan).
+
+train:
+  hidden_dims: [16, 16]   # <-- BIEN DUY NHAT thay doi (ban chinh: [128, 128, 64])
+  learning_rate: 0.001
+  windows_per_batch: 32
+  max_epochs: 100
+  patience: 15
+  eval_n_shuffles: 20
+  final_estimate_last_k_epochs: 10
+  seed: 42
+
+eval:
+  n_shuffles: 50
