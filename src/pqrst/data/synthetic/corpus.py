@@ -82,51 +82,147 @@ def generate_corpus(
               nen tinh 1 lan cho moi o luoi roi tai dung, dung tinh lai moi cua so.
         - Tra ve list[Window].
     """
-    raise NotImplementedError
-
+    windows = []
+    from pqrst.data.synthetic.var_linear_gaussian import generate_var_linear_gaussian, compute_var_linear_ground_truths
+    
+    seed_counter = base_seed
+    
+    for c in coupling_values:
+        for noise_std in noise_values:
+            # Tinh ground truth 1 lan cho moi cau hinh
+            gt_dict = compute_var_linear_ground_truths(a, b, c, noise_std)
+            te_gt, mi_full_gt, mi_reduced_gt = gt_dict["te"], gt_dict["mi_full"], gt_dict["mi_reduced"]
+            config_name = f"c_{c}_noise_{noise_std}"
+            
+            for N in n_values:
+                for _ in range(n_windows_per_cell):
+                    current_seed = seed_counter
+                    seed_counter += 1
+                    
+                    x, y, _ = generate_var_linear_gaussian(
+                        n_samples=N+1,
+                        a=a, b=b, c=c, noise_std=noise_std, seed=current_seed
+                    )
+                    
+                    y_t = y[1:]
+                    x_lag = x[:-1]
+                    y_lag = y[:-1]
+                    
+                    win = Window(
+                        y_t=y_t,
+                        x_lag=x_lag,
+                        y_lag=y_lag,
+                        n_samples=N,
+                        config_name=config_name,
+                        params={"a": a, "b": b, "c": c, "noise_std": noise_std},
+                        te_ground_truth=te_gt,
+                        mi_full_ground_truth=mi_full_gt,
+                        mi_reduced_ground_truth=mi_reduced_gt,
+                        seed=current_seed
+                    )
+                    windows.append(win)
+                    
+    return windows
 
 def split_corpus_by_seed(
     corpus: list[Window], val_fraction: float, split_seed: int
 ) -> tuple[list[Window], list[Window]]:
-    """Chia corpus thanh train/validation TACH BACH theo cua so (khong theo mau).
-
-    QUAN TRONG: phai chia theo CUA SO nguyen ven, khong duoc tron mau cua cung 1 cua so
-    vao ca 2 tap - neu khong se ro ri thong tin (leakage) va lam ket qua danh gia lac
-    quan gia tao.
-
-    Args:
-        corpus: toan bo corpus.
-        val_fraction: ty le cua so danh cho validation.
-        split_seed: seed cho phep hoan vi, de tai lap.
-
-    Returns:
-        (train_windows, val_windows).
-
-    TODO(ban tu code):
-        - Hoan vi ngau nhien chi so cua so (np.random.default_rng(split_seed)), cat
-          theo val_fraction.
-        - Kiem tra ca 2 tap deu con day du cac o luoi (moi (c, noise, N) deu xuat hien
-          o ca train lan val) - neu khong, canh bao; vi neu 1 o luoi chi nam o val thi
-          do la bai toan "generalize sang cau hinh moi", khac voi bai toan dang danh gia.
-    """
-    raise NotImplementedError
-
+    rng = np.random.default_rng(split_seed)
+    indices = rng.permutation(len(corpus))
+    
+    val_size = int(len(corpus) * val_fraction)
+    val_idx = indices[:val_size]
+    train_idx = indices[val_size:]
+    
+    val_windows = [corpus[i] for i in val_idx]
+    train_windows = [corpus[i] for i in train_idx]
+    
+    def get_cells(windows):
+        return set((w.config_name, w.n_samples) for w in windows)
+        
+    train_cells = get_cells(train_windows)
+    val_cells = get_cells(val_windows)
+    
+    missing_in_val = train_cells - val_cells
+    if missing_in_val:
+        print(f"WARNING: val missing cells: {missing_in_val}")
+        
+    missing_in_train = val_cells - train_cells
+    if missing_in_train:
+        print(f"WARNING: train missing cells: {missing_in_train}")
+        
+    return train_windows, val_windows
 
 def save_corpus(corpus: list[Window], path: str) -> None:
-    """Luu corpus ra dia (de notebook sau tai lai ma khong phai sinh lai).
-
-    TODO(ban tu code):
-        - Dinh dang de xuat: 1 file .npz chua cac mang da xep chong + 1 file .json
-          chua metadata (config_name, params, ground truths, seed) theo dung thu tu.
-          Hoac dung pickle neu don gian hon - nhung .npz + .json de audit hon.
-        - Ghi ro so cua so, tong so mau, va cac o luoi vao metadata de kiem tra lai.
-    """
-    raise NotImplementedError
-
+    import json
+    from pathlib import Path
+    
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    
+    y_t_list, x_lag_list, y_lag_list = [], [], []
+    metadata = []
+    
+    for i, w in enumerate(corpus):
+        y_t_list.append(w.y_t)
+        x_lag_list.append(w.x_lag)
+        y_lag_list.append(w.y_lag)
+        
+        metadata.append({
+            "idx": i,
+            "n_samples": w.n_samples,
+            "config_name": w.config_name,
+            "params": w.params,
+            "te_ground_truth": w.te_ground_truth,
+            "mi_full_ground_truth": w.mi_full_ground_truth,
+            "mi_reduced_ground_truth": w.mi_reduced_ground_truth,
+            "seed": w.seed
+        })
+        
+    npz_path = p.with_suffix(".npz")
+    json_path = p.with_suffix(".json")
+    
+    # Store objects with ragged shape using object arrays
+    np.savez_compressed(
+        npz_path, 
+        y_t=np.array(y_t_list, dtype=object), 
+        x_lag=np.array(x_lag_list, dtype=object), 
+        y_lag=np.array(y_lag_list, dtype=object)
+    )
+    
+    with open(json_path, "w") as f:
+        json.dump(metadata, f, indent=2)
 
 def load_corpus(path: str) -> list[Window]:
-    """Doc lai corpus da luu boi save_corpus.
-
-    TODO(ban tu code): dao nguoc chinh xac logic cua save_corpus.
-    """
-    raise NotImplementedError
+    import json
+    from pathlib import Path
+    
+    p = Path(path)
+    npz_path = p.with_suffix(".npz")
+    json_path = p.with_suffix(".json")
+    
+    with np.load(npz_path, allow_pickle=True) as data:
+        y_t_list = data["y_t"]
+        x_lag_list = data["x_lag"]
+        y_lag_list = data["y_lag"]
+        
+    with open(json_path, "r") as f:
+        metadata = json.load(f)
+        
+    windows = []
+    for i, m in enumerate(metadata):
+        w = Window(
+            y_t=y_t_list[i].astype(float),
+            x_lag=x_lag_list[i].astype(float),
+            y_lag=y_lag_list[i].astype(float),
+            n_samples=m["n_samples"],
+            config_name=m["config_name"],
+            params=m["params"],
+            te_ground_truth=m["te_ground_truth"],
+            mi_full_ground_truth=m["mi_full_ground_truth"],
+            mi_reduced_ground_truth=m["mi_reduced_ground_truth"],
+            seed=m["seed"]
+        )
+        windows.append(w)
+        
+    return windows
