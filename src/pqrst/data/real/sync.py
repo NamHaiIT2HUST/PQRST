@@ -1,99 +1,73 @@
-"""Dong bo hoa 2 kenh + cat cua so -> tai su dung dataclass Window cua Pha R.
-
-Nho tra ve dung Window, toan bo ha tang danh gia da co (grid.py, cac estimator, sanity
-check) chay duoc tren du lieu that ma KHONG phai sua gi - dung tinh than "hoan doi mot
-khoi" cua roadmap.
-
-*** DAY LA MODULE DE SAI NHAT PHA S ***
-Roadmap goc ghi ro: "Neu sanity check khong dat, kiem tra pipeline dong bo hoa TRUOC
-khi nghi ngo mo hinh."
-"""
-
 from __future__ import annotations
-
 import numpy as np
-
 from pqrst.data.synthetic.corpus import Window
 
+def sync_and_window(source: np.ndarray, target: np.ndarray, grid_fs: float, window_seconds: float = 30.0, config_name: str = "", record_id: str = "", step_seconds: float | None = None) -> list[Window]:
+    if step_seconds is None:
+        step_seconds = window_seconds
+        
+    assert len(source) == len(target), "Source and target must have the same length"
+    
+    n_samples = int(window_seconds * grid_fs)
+    step_samples = int(step_seconds * grid_fs)
+    
+    windows = []
+    for i in range(0, len(source) - n_samples + 1, step_samples):
+        s_seg = source[i:i+n_samples]
+        t_seg = target[i:i+n_samples]
+        
+        if np.isnan(s_seg).any() or np.isnan(t_seg).any():
+            continue
+            
+        y_t = t_seg[1:]
+        x_lag = s_seg[:-1]
+        y_lag = t_seg[:-1]
+        
+        windows.append(Window(
+            y_t=y_t,
+            x_lag=x_lag,
+            y_lag=y_lag,
+            n_samples=len(y_t),
+            te_ground_truth=float('nan'),
+            mi_full_ground_truth=float('nan'),
+            mi_reduced_ground_truth=float('nan'),
+            config_name=config_name,
+            params={'grid_fs': grid_fs, 'window_seconds': window_seconds, 'record_id': record_id, 'config_name': config_name},
+            seed=42 + i
+        ))
+    return windows
 
-def make_windows_from_synced_series(
-    source: np.ndarray,
-    target: np.ndarray,
-    grid_fs: float,
-    window_seconds: float,
-    config_name: str,
-    record_id: str,
-    step_seconds: float | None = None,
-) -> list[Window]:
-    """Cat 2 chuoi DA DONG BO thanh cac Window de dua vao estimator.
-
-    Args:
-        source: chuoi nguon X (vd RR interval da noi suy len luoi).
-        target: chuoi dich Y (vd EEG band power tren cung luoi). PHAI cung do dai
-            va cung goc thoi gian voi source.
-        grid_fs: tan so luoi (Hz), dung de doi window_seconds -> so mau.
-        window_seconds: do dai cua so (giay). KHUYEN NGHI 30.0 - xem ly do o duoi.
-        config_name: nhan cau hinh (vd "slpdb_rr_to_alpha").
-        record_id: ma ban ghi, de truy nguoc cua so ve ban ghi goc.
-        step_seconds: buoc truot. None = khong chong lan (= window_seconds).
-
-    Returns:
-        list[Window]. Luu y: te_ground_truth = NaN vi DU LIEU THAT KHONG CO DAP AN -
-        day la khac biet can ban so voi Pha P/Q/R. Moi ham tinh bias/MSE se khong dung
-        duoc; chi so sanh TUONG DOI giua 2 chieu va giua cac estimator moi co nghia.
-
-    CHON window_seconds - noi truc tiep voi ket qua Pha R:
-        Pha R da xac lap (on dinh qua 3 thi nghiem): T_phi thang KSG o N>=50, thua o
-        N<30. Voi grid_fs=4Hz:
-            30 giay -> N=120  -> vung T_phi manh  <-- KHUYEN NGHI
-            60 giay -> N=240  -> vung T_phi manh
-            10 giay -> N=40   -> ranh gioi, can than
-        30 giay con dung bang 1 epoch cham giai doan giac ngu tieu chuan -> khop voi
-        nhan co san cua slpdb/capslpdb.
-
-    TODO(ban tu code):
-        - n_samples = int(window_seconds * grid_fs)
-        - assert len(source) == len(target) - neu lech la dau hieu dong bo hoa sai.
-        - Voi moi cua so: y_t = target[1:], x_lag = source[:-1], y_lag = target[:-1]
-          (dung y het quy uoc cua corpus.py de tuong thich hoan toan).
-        - Bo cua so co NaN (doan du lieu mat/bi loai do artifact) - dem va bao cao
-          so cua so bi bo.
-        - params: luu grid_fs, window_seconds, record_id de truy nguoc duoc.
-    """
-    raise NotImplementedError
-
-
-def verify_synchronization(
-    source: np.ndarray,
-    target: np.ndarray,
-    grid_fs: float,
-    estimator,
-    shift_seconds: float = 10.0,
-) -> dict:
-    """*** TEST BAT BUOC: xac nhan pipeline that su do QUAN HE THOI GIAN ***
-
-    Y tuong: dich nhan tao 1 kenh di vai giay -> quan he thoi gian bi pha vo -> TE
-    phai GIAM RO. Neu TE khong doi khi dich, nghia la pipeline dang do mot thu gi do
-    khac (vd chi la tuong quan tinh giua 2 phan phoi), va moi ket luan ve "huong ghep
-    noi" deu vo nghia.
-
-    Day la test re nhat de bat loi dong bo hoa - lam TRUOC khi chay toan bo phan tich.
-
-    Args:
-        source, target: 2 chuoi da dong bo.
-        grid_fs: tan so luoi.
-        estimator: bat ky BaseTEEstimator nao (nen dung KSG cho test nay - no khong
-            phu thuoc checkpoint da train, nen loai duoc 1 bien so).
-        shift_seconds: do dich nhan tao.
-
-    Returns:
-        dict gom "te_aligned", "te_shifted", "ratio" (= te_shifted/te_aligned),
-        va "passed" (True neu te_shifted < te_aligned ro ret, vd ratio < 0.7).
-
-    TODO(ban tu code):
-        - Tinh TE tren cap (source, target) nhu binh thuong.
-        - Dich source di shift_seconds*grid_fs mau, cat cho cung do dai, tinh lai TE.
-        - Nen lap tren nhieu cua so roi lay trung binh - 1 cua so don le qua nhieu.
-        - Neu KHONG passed: DUNG LAI, dieu tra dong bo hoa, dung chay tiep phan tich.
-    """
-    raise NotImplementedError
+def verify_synchronization(source: np.ndarray, target: np.ndarray, grid_fs: float, estimator, shift_seconds: float = 10.0) -> dict:
+    wins_align = sync_and_window(source, target, grid_fs, 30.0)
+    te_align = []
+    for w in wins_align[:50]:
+        x = np.zeros(w.n_samples + 1)
+        y = np.zeros(w.n_samples + 1)
+        x[:-1] = w.x_lag
+        y[:-1] = w.y_lag
+        y[1:] = w.y_t
+        te_align.append(estimator.estimate(x, y))
+        
+    shift_samples = int(shift_seconds * grid_fs)
+    s_shift = source[shift_samples:]
+    t_shift = target[:-shift_samples]
+    wins_shift = sync_and_window(s_shift, t_shift, grid_fs, 30.0)
+    te_shift = []
+    for w in wins_shift[:50]:
+        x = np.zeros(w.n_samples + 1)
+        y = np.zeros(w.n_samples + 1)
+        x[:-1] = w.x_lag
+        y[:-1] = w.y_lag
+        y[1:] = w.y_t
+        te_shift.append(estimator.estimate(x, y))
+        
+    m_align = np.mean(te_align)
+    m_shift = np.mean(te_shift)
+    ratio = m_shift / m_align if m_align > 0 else float('inf')
+    
+    return {
+        "te_aligned": m_align,
+        "te_shifted": m_shift,
+        "ratio": ratio,
+        "passed": ratio < 0.7
+    }
