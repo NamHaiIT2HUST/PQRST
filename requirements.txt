@@ -1,5 +1,12 @@
 # Pha P (Nhịp 1 - Khởi động)
-numpy<2
+# LUU Y (phat hien khi review Pha S): pin "numpy<2" ban dau dat vi IDTxl dung
+# np.math.factorial (bi go o numpy 2.0). Khi cai wfdb/mne cho Pha S, numpy da TROI
+# len 2.4.6 (pip nang cap numpy nhu dependency bac cau, khong bi chan boi pin nay vi
+# pin chi ap dung khi cai TU dong requirements.txt, khong ap dung khi cai them goi
+# moi sau do). Da xac nhan IDTxl VAN chay dung o numpy 2.4.6 (KSG/Binning/Symbolic
+# deu test lai OK) nen bo pin cho khop thuc te moi truong dang dung - neu tao venv
+# moi tu dau va IDTxl loi voi numpy 2.x, thu ha ve numpy<2 truoc.
+numpy
 scipy
 pandas
 PyYAML
@@ -24,3 +31,5 @@ JPype1
 #       apnea-ecg. mne: doc EDF — CAP Sleep Database luu duoi dang EDF.
 wfdb
 mne
+scikit-learn  # can cho mne.preprocessing.ICA (method='fastica') - khu nhieu dien
+              # tim khoi EEG capslpdb bang ICA, xem eeg.py::remove_cardiac_artifact_ica
