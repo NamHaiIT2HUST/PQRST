@@ -18,7 +18,11 @@ cardiac:
   rr_physiological_range: [0.3, 2.0]   # giay (~30-200 bpm)
   ectopic_threshold_ratio: 0.2         # loai RR lech >20% so voi trung vi cuc bo
   max_removed_fraction: 0.2            # neu phai loai >20% -> loai ca ban ghi
-  interpolation: cubic                 # hoac linear - ghi ro lua chon trong bao cao
+  interpolation: linear                # da chon linear (np.interp) - khong dung cubic
+                                        # vi spline bac 3 co the tao "overshoot" gan
+                                        # cac diem RR bi loai bo (ectopic), sinh gia tri
+                                        # RR am/qua lon o vung thua diem - rui ro nay
+                                        # khong dang de doi lay do muot hon so voi linear
 
 # --- Kenh nao ---
 eeg:
@@ -26,7 +30,21 @@ eeg:
   log_transform: true  # cong suat lech phai manh -> log dua ve gan Gaussian
   spectrogram_window_seconds: 4.0   # >= vai chu ky cua tan so thap nhat trong band
 
-# --- Kiem tra nhieu truong tim (BAT BUOC, muc 3.2) ---
+# --- Kenh ho hap (Fantasia/Apnea-ECG - ket qua CHINH tren du lieu that, xem
+# docs/PHASE_S_REVIEW.md muc "Quyet dinh cuoi": slpdb/capslpdb (tim-nao) bi loai
+# khoi phan tich chinh vi nhiem nhieu dien tim KHONG khu duoc bang 5 phuong phap
+# da thu (template, +jitter, +taper, hoi quy ECG, ICA) - ho hap KHONG gap van de
+# nay (cam bien co/tro khang long nguc, khong nhay dien truong tim).
+respiration:
+  bandpass_hz: [0.1, 0.5]   # 6-30 lan tho/phut - trum kin dai ho hap nguoi lon binh thuong
+  # QUAN TRONG: dai nay dung de loc CA RR VA RESP (xem respiration.bandpass_filter) -
+  # phat hien tren Fantasia: neu chi loc RESP ma khong loc RR, RR giu nguyen trend
+  # cham (LF/VLF HRV) khien tri nho tu tuong quan cua RR (~11s) gap ~17x RESP (~0.65s),
+  # lam TE lech huong SAI so voi RSA (do thong ke, khong phai sinh ly). Loc CA HAI
+  # kenh cung dai nay TRUOC khi tinh TE.
+
+# --- Kiem tra nhieu truong tim (BAT BUOC cho slpdb/capslpdb - KHONG ap dung cho
+# pipeline ho hap o tren; giu lai cho notebook 02, dung de tai hien phat hien) ---
 cardiac_artifact_check:
   window_ms: 200.0
   artifact_ratio_threshold: 2.0   # > nguong nay -> nghi EEG bi nhiem, phai xu ly
