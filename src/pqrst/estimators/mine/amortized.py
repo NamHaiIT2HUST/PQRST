@@ -92,6 +92,7 @@ class AmortizedTrainConfig:
     eval_n_shuffles: int = 20       # so lan shuffle khi danh gia (KHONG dung 1 - xem Pha Q)
     final_estimate_last_k_epochs: int = 10  # trung binh k epoch cuoi, KHONG "best-of-all"
     seed: int = 42
+    standardize: bool = False       # z-score per-window (bat buoc o Pha S)
 
 
 class AmortizedTEEstimator(BaseTEEstimator):
@@ -119,9 +120,15 @@ class AmortizedTEEstimator(BaseTEEstimator):
 
     def estimate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> float:
         from pqrst.estimators.mine.conditional import estimate_te_from_window
+        from pqrst.utils.standardize import standardize_window
         y_t = y[1:]
         x_lag = x[:-1]
         y_lag = y[:-1]
+        
+        if self.config.standardize:
+            y_t = standardize_window(y_t)
+            x_lag = standardize_window(x_lag)
+            y_lag = standardize_window(y_lag)
         
         seed = kwargs.get("seed", 42)
         n_shuffles = self.config.eval_n_shuffles
@@ -203,10 +210,18 @@ def train_amortized(
     from collections import deque
     from pqrst.estimators.mine.losses import shuffle_batch, donsker_varadhan_loss
 
+    from pqrst.utils.standardize import standardize_window
+
     def prep_window(w):
-        ty_t = torch.tensor(w.y_t, dtype=torch.float32).unsqueeze(-1)
-        tx_lag = torch.tensor(w.x_lag, dtype=torch.float32).unsqueeze(-1)
-        ty_lag = torch.tensor(w.y_lag, dtype=torch.float32).unsqueeze(-1)
+        y_t, x_lag, y_lag = w.y_t, w.x_lag, w.y_lag
+        if config.standardize:
+            y_t = standardize_window(y_t)
+            x_lag = standardize_window(x_lag)
+            y_lag = standardize_window(y_lag)
+            
+        ty_t = torch.tensor(y_t, dtype=torch.float32).unsqueeze(-1)
+        tx_lag = torch.tensor(x_lag, dtype=torch.float32).unsqueeze(-1)
+        ty_lag = torch.tensor(y_lag, dtype=torch.float32).unsqueeze(-1)
         return ty_t, tx_lag, ty_lag
 
     train_loss_history = []

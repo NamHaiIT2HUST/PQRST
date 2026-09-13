@@ -2,26 +2,44 @@ from __future__ import annotations
 import numpy as np
 
 def bidirectional_te(windows_forward: list, windows_backward: list, estimator) -> dict:
+    """SUA (review): ban truoc dung `except: pass` nuot loi im lang, khong dem - neu
+    nhieu cua so loi se am tham cho ra ket qua tren mau con lai rat nho ma khong ai
+    biet. Gio dem so loi va BAO RO trong ket qua tra ve."""
     te_f = []
     te_b = []
+    n_failed_f = 0
+    n_failed_b = 0
     for w_f, w_b in zip(windows_forward, windows_backward):
-        x_f = np.zeros(w_f.n_samples + 1); y_f = np.zeros(w_f.n_samples + 1)
-        x_f[:-1] = w_f.x_lag; y_f[:-1] = w_f.y_lag; y_f[1:] = w_f.y_t
-        try: te_f.append(estimator.estimate(x_f, y_f))
-        except: pass
-        
-        x_b = np.zeros(w_b.n_samples + 1); y_b = np.zeros(w_b.n_samples + 1)
-        x_b[:-1] = w_b.x_lag; y_b[:-1] = w_b.y_lag; y_b[1:] = w_b.y_t
-        try: te_b.append(estimator.estimate(x_b, y_b))
-        except: pass
-        
+        x_f = np.empty(w_f.n_samples + 1); y_f = np.empty(w_f.n_samples + 1)
+        x_f[:-1] = w_f.x_lag; x_f[-1] = w_f.x_lag[-1]
+        y_f[:-1] = w_f.y_lag; y_f[-1] = w_f.y_t[-1]
+        try:
+            te_f.append(estimator.estimate(x_f, y_f))
+        except Exception:
+            n_failed_f += 1
+
+        x_b = np.empty(w_b.n_samples + 1); y_b = np.empty(w_b.n_samples + 1)
+        x_b[:-1] = w_b.x_lag; x_b[-1] = w_b.x_lag[-1]
+        y_b[:-1] = w_b.y_lag; y_b[-1] = w_b.y_t[-1]
+        try:
+            te_b.append(estimator.estimate(x_b, y_b))
+        except Exception:
+            n_failed_b += 1
+
+    if n_failed_f or n_failed_b:
+        print(f"CANH BAO bidirectional_te: {n_failed_f}/{len(windows_forward)} cua so "
+              f"chieu forward va {n_failed_b}/{len(windows_backward)} cua so chieu "
+              f"backward loi khi uoc luong - da bo qua, KHONG tinh vao trung binh.")
+
     return {
         "te_forward_mean": np.mean(te_f),
         "te_backward_mean": np.mean(te_b),
         "te_forward_values": te_f,
         "te_backward_values": te_b,
         "difference": np.mean(te_f) - np.mean(te_b),
-        "n_windows": len(te_f)
+        "n_windows": len(te_f),
+        "n_failed_forward": n_failed_f,
+        "n_failed_backward": n_failed_b,
     }
 
 def permutation_test_te(windows: list, estimator, n_permutations: int = 500, seed: int = 42) -> dict:
