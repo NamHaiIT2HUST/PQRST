@@ -20,9 +20,17 @@
   đưa được về dưới ngưỡng**. Đây là phát hiện phương pháp luận thật, được ghi nhận
   làm hạn chế/đóng góp, không phải bug.
 - **TE tim-hô hấp (Fantasia) — KẾT QUẢ CHÍNH, ĐẠT với KSG.** Sau khi sửa 2 lỗi (NaN
-  lan trong `filtfilt`, và bất đối xứng lọc bằng-thông giữa RR/RESP), KSG xác nhận
-  đúng hướng RSA đã biết trong tài liệu (hô hấp→tim > tim→hô hấp), CI 95% của hiệu
-  số hoàn toàn dương `[0.0162, 0.0200]`, trên 17/40 bản ghi đã qua đủ kiểm định.
+  lan trong `filtfilt`, và bất đối xứng lọc bằng-thông giữa RR/RESP) **và sửa 1 lỗi
+  thống kê** (pseudo-replication — xem mục 3.3), KSG xác nhận đúng hướng RSA đã biết
+  trong tài liệu (hô hấp→tim > tim→hô hấp) trên **N=17 bản ghi** (đơn vị mẫu ĐÚNG,
+  không phải cửa sổ), CI 95% của hiệu số `[0.0039, 0.0353]`, Wilcoxon p=0.0116.
+- **Đối chứng độc lập thứ 2 (Apnea-ECG, 6 bản ghi)** cùng chiều (không đủ mạnh để có
+  ý nghĩa riêng do N nhỏ) — **gộp cả 2 bộ (N=23) cho kết quả mạnh nhất**: CI
+  `[0.0057, 0.0311]`, Wilcoxon p=0.0046, 18/23 (78%) bản ghi đúng hướng.
+- **Kiểm tra độ nhạy tham số (9 tổ hợp bandpass × độ dài cửa sổ):** chiều kết quả
+  **ổn định tuyệt đối 9/9 (100%)** — ý nghĩa thống kê giảm dần có giải thích được
+  khi cửa sổ dài hơn/băng thông rộng hơn (pha loãng tín hiệu), không phải dấu hiệu
+  kết quả giả. Xem mục 3.4.
 - **Amortized MINE FAIL trên dữ liệu thật** (TE âm, `-0.25` và `-0.07`) — do mạng bị
   lệch chuẩn (miscalibrated) trên tín hiệu dao động gần tuần hoàn, khớp với phát
   hiện Pha R2 (amortized yếu hơn KSG trên dữ liệu phi tuyến/periodic ở N nhỏ). Ghi
@@ -117,16 +125,76 @@ Số bản ghi PASS kiểm định đồng bộ giảm 23→17 sau khi sửa —
 sau khi lọc đúng dải tần quan tâm, vài bản ghi có ghép nối yếu không còn "vô tình"
 qua kiểm tra nhờ nội dung phổ rộng còn sót lại từ RR chưa lọc.
 
-### 3.3. Kết quả sanity check cuối cùng
+### 3.3. Lỗi #3 (chuẩn bị cho Q1/Q2) — gộp cửa sổ làm đơn vị mẫu (pseudo-replication)
 
-Gộp 17 bản ghi PASS (4049 cửa sổ mỗi chiều, cửa sổ 30s = 120 mẫu):
+**Phát hiện khi rà soát lại cho mục tiêu công bố:** phiên bản đầu tiên của sanity
+check gộp TẤT CẢ cửa sổ của TẤT CẢ bản ghi thành 1 tập (`N=4049`) rồi bootstrap/kiểm
+định trên đó. Đây là lỗi thống kê kinh điển ("pseudo-replication" / giả lập số
+mẫu): các cửa sổ trong CÙNG 1 bản ghi tương quan với nhau (cùng 1 người, cùng 1 đêm
+ghi), không độc lập — coi chúng là "4049 mẫu độc lập" phản ánh SAI độ không chắc
+chắn thực sự. Đây là loại lỗi reviewer thống kê/sinh lý học sẽ bắt ngay trong 1 bài
+Q1/Q2.
 
-| Estimator | TE(hô hấp→tim) | TE(tim→hô hấp) | CI 95% của hiệu số | Kết luận |
-|---|---|---|---|---|
-| **KSG** | 0.1110 | 0.0929 | **[0.0162, 0.0200]** | ✅ **PASS** |
-| Amortized | -0.2474 | -0.0705 | [-0.1806, -0.1732] | ❌ FAIL |
+**Sửa:** thêm `bidirectional_te_per_record`/`run_sanity_check_per_record` — tính 1
+giá trị TE trung bình cho MỖI bản ghi, kiểm định trên N=số_bản_ghi (đơn vị mẫu
+ĐÚNG), kèm kiểm định Wilcoxon signed-rank (phi tham số, phù hợp N nhỏ) làm kiểm
+định độc lập thứ 2.
 
-**=== KẾT LUẬN CHUNG: ĐẠT (KSG xác nhận đúng hướng RSA, thống kê rõ ràng) ===**
+### 3.4. Kết quả sanity check chính thức (theo đơn vị bản ghi, N=17)
+
+| Estimator | TE(hô hấp→tim) | TE(tim→hô hấp) | CI 95% của hiệu số | Wilcoxon p | Kết luận |
+|---|---|---|---|---|---|
+| **KSG** | 0.1109 | 0.0929 | **[0.0039, 0.0353]** | 0.0116 | ✅ **PASS** |
+| Amortized | -0.2474 | -0.0704 | [-0.2119, -0.1434] | 1.0000 | ❌ FAIL |
+
+CI theo đơn vị bản ghi rộng hơn CI (sai) theo cửa sổ trước đó (`[0.0162,0.0200]`) —
+đúng như dự kiến khi sửa một giả định độc lập bị vi phạm, nhưng **vẫn hoàn toàn
+loại trừ 0** — kết luận PASS đứng vững dưới phương pháp thống kê đúng.
+
+**=== KẾT LUẬN CHUNG: ĐẠT (KSG xác nhận đúng hướng RSA, thống kê đúng phương pháp) ===**
+
+### 3.5. Kiểm tra độ nhạy tham số (chuẩn bị cho Q1/Q2)
+
+Chạy lại toàn bộ pipeline trên 40 bản ghi Fantasia với 9 tổ hợp (3 dải bandpass ×
+3 độ dài cửa sổ) — xem `notebooks/phase_s_04_sensitivity_analysis.ipynb`:
+
+| Bandpass (Hz) | Cửa sổ (s) | N pass | Hiệu số | CI 95% | Wilcoxon p | PASS |
+|---|---|---|---|---|---|---|
+| (0.15, 0.4) | 20 | 15 | 0.0313 | [0.0138, 0.0491] | 0.0062 | ✅ |
+| (0.15, 0.4) | 30 | 15 | 0.0258 | [0.0037, 0.0496] | 0.0319 | ✅ |
+| (0.15, 0.4) | 45 | 15 | 0.0220 | [-0.0037, 0.0491] | 0.0206 | ❌ |
+| (0.1, 0.5) *(mặc định)* | 20 | 17 | 0.0220 | [0.0111, 0.0347] | 0.0008 | ✅ |
+| (0.1, 0.5) | 30 | 17 | 0.0180 | [0.0039, 0.0353] | 0.0116 | ✅ |
+| (0.1, 0.5) | 45 | 17 | 0.0159 | [-0.0012, 0.0353] | 0.0153 | ❌ |
+| (0.05, 0.6) | 20 | 19 | 0.0108 | [0.0010, 0.0236] | 0.0180 | ✅ |
+| (0.05, 0.6) | 30 | 19 | 0.0070 | [-0.0068, 0.0249] | 0.1467 | ❌ |
+| (0.05, 0.6) | 45 | 19 | 0.0055 | [-0.0116, 0.0275] | 0.2706 | ❌ |
+
+**Chiều kết quả ổn định TUYỆT ĐỐI: 9/9 (100%) hiệu số đều dương** (đúng hướng RSA).
+Ý nghĩa thống kê đạt 5/9 tổ hợp — **giảm dần CÓ GIẢI THÍCH ĐƯỢC**, không ngẫu
+nhiên: hiệu số giảm đơn điệu khi cửa sổ dài hơn (20s→30s→45s, cả 3 dải bandpass) và
+khi bandpass rộng hơn (0.15-0.4 → 0.1-0.5 → 0.05-0.6) — cả 2 xu hướng đều pha loãng
+tín hiệu ghép nối cụ thể bằng nội dung ngoài dải/ngoài cửa sổ quan tâm. Đây là hành
+vi hợp lý của 1 hiệu ứng THẬT có kích thước vừa phải, không phải dấu hiệu kết quả
+giả/ngẫu nhiên.
+
+### 3.6. Đối chứng độc lập thứ 2: Apnea-ECG + gộp meta-analysis
+
+`notebooks/phase_s_05_apnea_ecg_replication.ipynb` — 8 bản ghi Apnea-ECG có kênh hô
+hấp (`a01-a04, b01, c01-c03`), cấu trúc khác Fantasia (ECG và hô hấp ở 2 file WFDB
+riêng cho cùng 1 lần ghi — `a01`=ECG+`.qrs`, `a01r`=hô hấp, không annotation nhịp).
+6/8 bản ghi PASS kiểm tra đồng bộ.
+
+| | N | TE(hô hấp→tim) | TE(tim→hô hấp) | CI 95% | Wilcoxon p |
+|---|---|---|---|---|---|
+| Apnea-ECG riêng | 6 | 0.1362 | 0.1185 | [-0.0038, 0.0455] (chứa 0) | 0.2188 |
+| **Gộp Fantasia + Apnea-ECG** | **23** | 0.1175 | 0.0996 | **[0.0057, 0.0311]** | **0.0046** |
+
+Apnea-ECG một mình chưa đủ mạnh (N=6 nhỏ) nhưng **cùng chiều** với Fantasia (4/6 bản
+ghi đúng hướng). Vì đây là 2 nguồn dữ liệu **độc lập thống kê thực sự** (đối tượng
+khác, thiết bị ghi khác), gộp thành 1 kiểm định chung trên N=23 (kiểu meta-analysis)
+là cách tổng hợp đúng — cho **bằng chứng mạnh nhất trong toàn bộ Pha S**: CI hoàn
+toàn dương, Wilcoxon p=0.0046, 18/23 (78%) bản ghi đúng hướng.
 
 ---
 
@@ -174,23 +242,26 @@ Pha R2) + chuẩn hóa — việc lớn, tốn thời gian sinh corpus + train +
 | 10 | `respiration.py` | NaN đứt cảm biến lan toàn tín hiệu qua `filtfilt` | Chạy 40 bản ghi Fantasia, phát hiện `ratio=nan` |
 | 11 | Pipeline TE tim-hô hấp | Bất đối xứng lọc bằng-thông RR/RESP làm TE lệch hướng (mục 3.2) | Đo tự tương quan sau khi thấy hướng TE sai |
 | 12 | `sync.py` | `verify_synchronization` hardcode `0.7` thay vì đọc từ config | Review code |
+| 13 | `sanity_check.py` | Gộp cửa sổ làm đơn vị mẫu bootstrap — pseudo-replication, phản ánh sai độ tin cậy (mục 3.3) | Rà soát lại trước khi chuẩn bị công bố |
 
 ---
 
 ## 6. Khuyến nghị cho Pha T / viết bài báo
 
 1. **Khung câu chuyện Q1/Q2 đề xuất:** MINE amortized + so sánh KSG validated đầy đủ
-   trên dữ liệu tổng hợp (Pha P-R) → xác nhận trên dữ liệu THẬT sạch (Fantasia,
-   TE tim-hô hấp, khớp RSA đã biết) → 2 hạn chế được điều tra kỹ và báo cáo trung
-   thực: (a) nhiễm điện tim trong PSG EEG không khử được bằng 5 phương pháp chuẩn
-   (đóng góp phương pháp luận, hiếm nghiên cứu cùng chủ đề kiểm tra kỹ vậy), (b)
-   amortized cần cải thiện để tổng quát hóa trên dữ liệu phi tuyến/dao động thật.
+   trên dữ liệu tổng hợp (Pha P-R) → xác nhận trên dữ liệu THẬT, **2 nguồn độc lập**
+   (Fantasia + Apnea-ECG, TE tim-hô hấp, khớp RSA đã biết, kiểm tra độ nhạy tham số
+   đầy đủ) → 2 hạn chế được điều tra kỹ và báo cáo trung thực: (a) nhiễm điện tim
+   trong PSG EEG không khử được bằng 5 phương pháp chuẩn (đóng góp phương pháp luận,
+   hiếm nghiên cứu cùng chủ đề kiểm tra kỹ vậy), (b) amortized cần cải thiện để tổng
+   quát hóa trên dữ liệu phi tuyến/dao động thật.
 2. **Không nên báo cáo TE tim-não trên slpdb/capslpdb** như kết quả dương — rủi ro
    bị nghi ngờ toàn bộ bài nếu reviewer có nền EEG/sleep research phát hiện vấn đề
    nhiễm nhiễu đã biết trong tài liệu.
-3. **Cân nhắc cho Pha T** (nếu muốn mở rộng dữ liệu thật): Apnea-ECG (8 bản ghi có
-   hô hấp: `a01-a04, b01, c01-c03`) — cấu trúc file khác Fantasia (ECG và hô hấp ở
-   2 file WFDB riêng), chưa viết logic đọc+ghép, có thể làm đối chứng độc lập thứ 2.
+3. **Đã hoàn thành cho Q1/Q2** (không còn là "cân nhắc"): thống kê đúng theo đơn vị
+   bản ghi (không pseudo-replication), kiểm tra độ nhạy 9 tổ hợp tham số, đối chứng
+   độc lập Apnea-ECG + gộp meta-analysis 2 nguồn (N=23, bằng chứng mạnh nhất). Xem
+   mục 3.3–3.6.
 4. **Nếu muốn theo đuổi TE tim-não sau này:** cần dữ liệu EEG mật độ cao hơn (nhiều
    kênh độc lập thật, không phải vài kênh differential lân cận) để ICA khả thi, hoặc
    đầu tư bộ lọc thích nghi cục bộ (theo dõi trôi dạt theo thời gian) — cả 2 đều là
