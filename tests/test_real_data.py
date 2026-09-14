@@ -14,6 +14,7 @@ from pqrst.data.real.sync import align_to_common_grid, sync_and_window, verify_s
 from pqrst.data.real.respiration import preprocess_respiration, bandpass_filter
 from pqrst.evaluation.sanity_check import (
     bidirectional_te, permutation_test_te, bootstrap_ci, run_sanity_check,
+    bidirectional_te_per_record, run_sanity_check_per_record,
 )
 from pqrst.utils.standardize import standardize_window
 from pqrst.data.synthetic.var_linear_gaussian import generate_var_linear_gaussian
@@ -340,6 +341,30 @@ class TestSanityCheck:
         res = run_sanity_check(w_fwd, w_bwd, KSGTEEstimator(), n_bootstrap=200, seed=7)
         assert res["te_forward_mean"] > res["te_backward_mean"]
         assert bool(res["passed"])
+
+    def test_run_sanity_check_per_record_detects_known_direction(self):
+        """*** Sua pseudoreplication (chuan bi cho Q1/Q2) ***: don vi mau DUNG la
+        BAN GHI, khong phai cua so (cac cua so trong cung 1 ban ghi tuong quan voi
+        nhau). Mo phong 6 "ban ghi" DOC LAP (seed khac nhau), moi ban ghi chi co
+        ghep noi X->Y (khong co Y->X) - kiem dinh theo ban ghi phai phat hien dung
+        chieu."""
+        records = {}
+        for seed in range(6):
+            x, y, _ = generate_var_linear_gaussian(1500, 0.5, 0.5, 0.8, 0.3, seed=seed)
+            w_fwd = sync_and_window(x, y, grid_fs=1.0, window_seconds=50.0)
+            w_bwd = sync_and_window(y, x, grid_fs=1.0, window_seconds=50.0)
+            records[f"rec{seed}"] = (w_fwd, w_bwd)
+
+        per_record = bidirectional_te_per_record(records, KSGTEEstimator())
+        assert len(per_record) == 6
+        fwd = [v["te_forward"] for v in per_record.values()]
+        bwd = [v["te_backward"] for v in per_record.values()]
+
+        res = run_sanity_check_per_record(fwd, bwd, n_bootstrap=200, seed=7)
+        assert res["n_records"] == 6
+        assert res["te_forward_mean"] > res["te_backward_mean"]
+        assert bool(res["passed"])
+        assert res["wilcoxon_p"] < 0.05
 
     def test_bidirectional_te_counts_failures(self):
         src = np.arange(50.0)
