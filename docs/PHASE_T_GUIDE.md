@@ -72,27 +72,53 @@ tính toán nặng.
 ## 2. T.2 — Formalize estimator lai (hybrid KSG/Amortized)
 
 Pha R (mục 4.7, `PHASE_R_REPORT.md`) khuyến nghị mạnh: **dùng KSG cho N<30-50,
-Amortized cho N≥30-50** — điểm giao cắt ổn định qua 3 kiểm định độc lập (mạng lớn,
-mạng nhỏ, dữ liệu phi tuyến). Hiện tại đây chỉ là 1 khuyến nghị bằng lời, chưa có
-class code thật.
+Amortized cho N lớn hơn** — điểm giao cắt là hiện tượng ổn định (Amortized luôn
+thắng rõ từ 1 N đủ lớn) qua 3 kiểm định độc lập (mạng lớn, mạng nhỏ, dữ liệu phi
+tuyến), nhưng **giá trị N cụ thể của điểm giao cắt KHÁC NHAU giữa 2 loại dữ liệu**
+(≈30 cho tuyến tính, ≈50 cho periodic — xem số liệu chính xác dưới đây). Hiện tại
+đây chỉ là 1 khuyến nghị bằng lời, chưa có class code thật.
 
 **Việc cần làm:**
 ```python
 # src/pqrst/estimators/hybrid.py
 class HybridTEEstimator(BaseTEEstimator):
     """TE = KSG neu N < threshold, Amortized neu N >= threshold. Nguong mac dinh
-    30 - diem giao cat da xac nhan on dinh qua 3 kiem dinh doc lap (xem
-    PHASE_R_REPORT.md muc 4.4-4.6)."""
-    def __init__(self, amortized_estimator, threshold_n: int = 30):
+    50 (KHONG phai 30 - xem SUA duoi day)."""
+    def __init__(self, amortized_estimator, threshold_n: int = 50):
         ...
     def estimate(self, x, y, **kwargs) -> float:
         n = len(x) - 1  # so mau cua so (tru placeholder)
         return self.ksg.estimate(x, y) if n < self.threshold_n else self.amortized.estimate(x, y)
 ```
+
+**SỬA (phát hiện khi agent coding validate T.2 trên lưới đã có — bản đầu tiên của
+guide này viết sai):** ngưỡng KHÔNG phải "N=30 chung cho cả 3 kiểm định" như câu
+trên đã lỡ tóm tắt quá đơn giản. Số liệu thật (`phase_r2_periodic_grid_summary.csv`,
+lưới N=[10,20,30,50,100,200], không có điểm giữa 30 và 50):
+
+| N | KSG variance (periodic) | Amortized variance (periodic) | Ai thắng |
+|---|---|---|---|
+| 30 | 0.00636 | 0.00717 | **KSG** |
+| 50 | 0.00691 | 0.00455 | Amortized |
+
+Ở N=30, trên dữ liệu **periodic**, KSG vẫn thắng — ngưỡng 30 (đúng cho dữ liệu
+tuyến tính) làm Hybrid chọn NHẦM Amortized trên periodic. `PHASE_R_REPORT.md` mục
+4.6 (bản gốc) đã ghi đúng "N≈50" cho periodic — lỗi này chỉ nằm ở bản tóm tắt quá
+tay trong guide này, không phải trong báo cáo Pha R.
+
+**Quyết định: ngưỡng mặc định = 50 (1 ngưỡng chung, không chia theo loại dữ liệu).**
+Lý do: với dữ liệu THẬT không biết trước động lực học tuyến tính hay phi tuyến —
+dùng ngưỡng khác nhau theo loại dữ liệu đòi hỏi 1 giả định không kiểm chứng được
+lúc suy luận. Ngưỡng 50 hy sinh 1 phần hiệu năng trên dữ liệu tuyến tính ở N=30-49
+(Amortized vẫn thắng ở đó) để đổi lại: không bao giờ chọn nhầm phương án tệ hơn ở
+bất kỳ N đã kiểm chứng nào, trên cả 2 loại dữ liệu.
+
 Validate: áp ngay lên lưới ĐÃ CÓ (`phase_r_grid_summary.csv` + `phase_r2_periodic_grid_summary.csv`)
 — không cần chạy lại, chỉ cần chọn giá trị Amortized hoặc KSG theo N cho mỗi dòng
 đã có sẵn, rồi tính lại bias/variance của "Hybrid". Thêm test đơn giản xác nhận
-logic chuyển ngưỡng đúng.
+logic chuyển ngưỡng đúng, VÀ 1 test xác nhận Hybrid không thua estimator thành
+phần ở bất kỳ N nào trong 2 bảng grid đã có (đây chính là test đã bắt được lỗi
+ngưỡng 30 ban đầu).
 
 **Thời gian:** 1 ngày (code nhỏ, validate trên dữ liệu có sẵn, không train/chạy lại gì).
 
