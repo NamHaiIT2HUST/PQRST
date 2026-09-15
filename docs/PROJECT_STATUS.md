@@ -10,7 +10,8 @@
 > tiến độ THỰC TẾ, cập nhật mỗi khi xong 1 việc lớn.
 >
 > Nếu cần làm rõ RIÊNG input/output/research gap (không lẫn với tiến độ), xem
-> [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md).
+> [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md). Toàn bộ hình ảnh minh chứng
+> tổng hợp theo thứ tự giai đoạn: [`FIGURES_APPENDIX.md`](FIGURES_APPENDIX.md).
 
 **Cập nhật lần cuối:** 2026-09-15.
 
