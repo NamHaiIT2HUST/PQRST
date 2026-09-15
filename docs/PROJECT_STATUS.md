@@ -8,6 +8,9 @@
 >
 > Khác `ROADMAP.md` (kế hoạch gốc, không đổi theo thời gian) — file này là ảnh chụp
 > tiến độ THỰC TẾ, cập nhật mỗi khi xong 1 việc lớn.
+>
+> Nếu cần làm rõ RIÊNG input/output/research gap (không lẫn với tiến độ), xem
+> [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md).
 
 **Cập nhật lần cuối:** 2026-09-15.
 
