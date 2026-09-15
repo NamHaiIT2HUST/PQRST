@@ -1,9 +1,3 @@
-# Báo cáo tổng thể gửi Thầy/Cô hướng dẫn
-
-**Người viết:** [Tên sinh viên]
-
----
-
 ## 1. Bài toán đang giải
 
 Các phương pháp ước lượng transfer entropy (TE) cổ điển (KSG, binning, symbolic)
@@ -91,19 +85,20 @@ liệu Apnea) và **TENDE** (Transfer Entropy Neural Diffusion Estimation — đ
 được nhận tại AISTATS 2026). Cả hai cũng dùng mạng nơ-ron ước lượng TE và test
 trên dữ liệu thật, nên em không thể coi mình là "đầu tiên" theo hướng này.
 
-Điểm khác của em: TREET và TENDE tập trung chứng minh estimator của họ chính
-xác hơn các phương pháp khác (góc nhìn "ai thắng ai"). Em đi theo hướng khác —
+Em đã đọc kỹ phần thực nghiệm của cả 2 bài để so benchmark thật (chi tiết ở
+`LITERATURE_COMPARISON_AND_LEAKAGE.md`). Điểm quan trọng nhất: **cả TREET và
+TENDE đều test ở vùng mẫu lớn (T=500–50.000), không kiểm định vùng N=10–200 mà
+đề tài của em tập trung** — đây là khoảng trống thật, không trùng lặp. Trên dữ
+liệu tim–hô hấp thật, cả 3 nghiên cứu đều cùng hướng (hô hấp→tim chiếm ưu thế),
+nhưng tỷ lệ của em (≈1.18 lần) nhỏ hơn TREET (≈6 lần, đo trên 1 bệnh nhân ngưng
+thở khi ngủ) và TENDE (≈2-3 lần) — hợp lý vì em gộp 23 bản ghi từ quần thể rộng
+hơn (người khỏe mạnh + có nguy cơ), không chỉ 1 bệnh nhân.
+
+Ngoài điểm đó, TREET/TENDE còn tập trung chứng minh estimator của họ chính xác
+hơn các phương pháp khác (góc nhìn "ai thắng ai"). Em đi theo hướng khác —
 **phân tích không gian đặc trưng để chẩn đoán khi nào mô hình còn tin được**
 (mục 4), gắn trực tiếp với cơ sở lý thuyết Donsker-Varadhan mà phương pháp dựa
 vào, và **chủ động phát hiện, lý giải tận gốc một trường hợp thất bại thật**
 (domain generalization gap) thay vì chỉ báo cáo kết quả tốt. Em cho rằng đây là
 một hướng đóng góp bổ sung cho, chứ không cạnh tranh trực tiếp với, 2 bài trên —
 và sẽ trích dẫn/định vị rõ trong phần Related Work của bản thảo.
-
-## 6. Việc còn lại
-
-Toàn bộ phần thực nghiệm và phân tích ở trên đã hoàn tất và được kiểm tra lại
-độc lập (chạy lại notebook, đối chiếu số liệu). Việc còn lại là viết bản thảo
-đầy đủ (Abstract → Conclusion) và review đối chiếu số liệu lần cuối trước khi
-nộp — em xin ý kiến thầy/cô về hướng bài (Entropy hay Frontiers in Network
-Physiology) trước khi bắt đầu viết.

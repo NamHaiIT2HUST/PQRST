@@ -1,7 +1,3 @@
-# Trả lời góp ý của Thầy/Cô
-
-**Người viết:** [Tên sinh viên] — **Gửi:** Thầy/Cô hướng dẫn
-
 ## 1. Thông số model
 
 Mạng `T_φ`: MLP 4→128→128→64→1, ELU. **25.473 tham số.** Có thêm bản thu nhỏ
@@ -11,7 +7,7 @@ khác seed.
 
 ## 2. Hình chỉ rõ "gap"
 
-Em chiếu dữ liệu tim–hô hấp thật vào đúng không gian đặc trưng mạng đã học từ
+Chiếu dữ liệu tim–hô hấp thật vào đúng không gian đặc trưng mạng đã học từ
 dữ liệu mô phỏng (không train lại, không fit lại PCA):
 
 ![Domain gap](../results/figures/phase_t_pca_domain_gap.png)
@@ -39,13 +35,3 @@ dưới Donsker-Varadhan (nền tảng lý thuyết của MINE) yêu cầu mạn
 
 Tách biệt rõ ngay từ khối 1 — mạng học đúng đối tượng toán học của bài toán,
 không chỉ "ra số tốt hơn".
-
-## 5. Trạng thái đăng của 2 bài đã so sánh
-
-- **TREET** — đã đăng tại **IEEE Access** (có bình duyệt).
-- **TENDE** — đã nhận tại **AISTATS 2026** (hội nghị có bình duyệt).
-
-Cả hai trích dẫn được. TREET cũng test trên dữ liệu Apnea nên là bài cần so sánh
-kỹ nhất — điểm khác của em: TREET chứng minh estimator của họ chính xác hơn, em
-đi vào phân tích không gian đặc trưng để giải thích khi nào mô hình còn tin
-được, và chủ động chỉ ra + lý giải một trường hợp thất bại thật.
