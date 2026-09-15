@@ -1,14 +1,15 @@
 # Tổng quan chi tiết tiến độ dự án PQRST (Q-BHC / AQNE-TE)
 
 > Tài liệu này tổng hợp ĐẦY ĐỦ nội dung từ `PHASE_P_REPORT.md`, `PHASE_Q_REPORT.md`,
-> `PHASE_R_REPORT.md`, `PHASE_S_REPORT.md`, `PHASE_S_REVIEW.md` thành 1 báo cáo
-> tiến độ liền mạch — dùng để báo cáo mentor, không cần mở từng file riêng. Số
-> liệu, bảng, hình đều lấy trực tiếp từ các báo cáo gốc (không suy diễn thêm).
+> `PHASE_R_REPORT.md`, `PHASE_S_REPORT.md`, `PHASE_S_REVIEW.md`, `PHASE_T_REPORT.md`
+> thành 1 báo cáo tiến độ liền mạch — dùng để báo cáo mentor, không cần mở từng
+> file riêng. Số liệu, bảng, hình đều lấy trực tiếp từ các báo cáo gốc (không suy
+> diễn thêm).
 >
 > Khác `ROADMAP.md` (kế hoạch gốc, không đổi theo thời gian) — file này là ảnh chụp
 > tiến độ THỰC TẾ, cập nhật mỗi khi xong 1 việc lớn.
 
-**Cập nhật lần cuối:** 2026-09-14.
+**Cập nhật lần cuối:** 2026-09-15.
 
 ---
 
@@ -19,9 +20,10 @@
 3. [Pha Q — MINE cổ điển](#3-pha-q--mine-cổ-điển-✅-đạt)
 4. [Pha R (+R2) — Amortized MINE](#4-pha-r-r2--amortized-mine-✅-hạ-tầng-đạt-tiêu-chí-thoát-chưa-đạt-nhưng-có-câu-chuyện)
 5. [Pha S — Dữ liệu thật](#5-pha-s--dữ-liệu-thật-✅-đạt-qua-đổi-hướng)
-6. [Tiếp theo: Pha T và Nhịp 2](#6-tiếp-theo)
-7. [Đánh giá quy mô còn lại](#7-đánh-giá-quy-mô-còn-lại)
-8. [Việc linh tinh chưa xử lý](#8-việc-linh-tinh-chưa-xử-lý)
+6. [Pha T — Hybrid + hiệu chỉnh bias](#6-pha-t--hybrid--hiệu-chỉnh-bias-✅-code-đạt-bản-thảo-chưa-làm)
+7. [Tiếp theo: bản thảo và Nhịp 2](#7-tiếp-theo-bản-thảo-và-nhịp-2)
+8. [Đánh giá quy mô còn lại](#8-đánh-giá-quy-mô-còn-lại)
+9. [Việc linh tinh chưa xử lý](#9-việc-linh-tinh-chưa-xử-lý)
 
 ---
 
@@ -466,26 +468,63 @@ trong phạm vi Pha S (xem mục 7 — cân đối chi phí/lợi ích).
 
 ---
 
-## 6. Tiếp theo
+## 6. Pha T — Hybrid + hiệu chỉnh bias ✅ code đạt (bản thảo chưa làm)
 
-### 6.1. Pha T — Kết quả & bản thảo checkpoint (Nhịp 1) — CHƯA BẮT ĐẦU
+> Chi tiết đầy đủ: [`PHASE_T_REPORT.md`](PHASE_T_REPORT.md). Kế hoạch/ước tính
+> thời gian gốc: [`PHASE_T_GUIDE.md`](PHASE_T_GUIDE.md).
 
-Theo `ROADMAP.md`, ước tính gốc 2-3 tuần:
+**T.1 — Tổng hợp kết quả chính:** 1 notebook (`phase_t_01_main_results.ipynb`) đọc
+lại toàn bộ số liệu đã tính từ Pha R/R2/S (không tính lại), tái xác nhận **khớp
+100%** với số liệu real-data đã công bố ở `PHASE_S_REPORT.md` mục 5.4 (N=23, CI
+`[0.0057,0.0311]`, Wilcoxon p=0.0046) — chạy độc lập lần 2, không lệch số.
 
-- [ ] `run_main_experiment.py`: quét N trên các bộ dữ liệu × phương pháp. **Cần
-      điều chỉnh phạm vi**: chỉ Fantasia + Apnea-ECG dùng được trên dữ liệu thật
-      (tim-não đã loại) + dữ liệu tổng hợp từ Pha R.
-- [x] Bootstrap + permutation test — **đã có sẵn** từ Pha S
-      (`bootstrap_ci`, `permutation_test_te`, `run_sanity_check_per_record`), tái
-      dùng được.
-- [ ] Viết bản thảo (LaTeX/Overleaf) — tổng hợp báo cáo P/Q/R/S thành 1 câu chuyện.
-      Phần việc lớn nhất còn lại.
-- **Cổng quyết định sau Pha T:** kết quả hiện tại (Amortized thắng rõ N≥30 trên dữ
-  liệu tuyến tính, thua KSG trên phi tuyến/dữ liệu thật) là "kết quả có câu chuyện,
-  ngang bằng" theo phân loại roadmap gốc → **vẫn đáng sang Nhịp 2**, hạ kỳ vọng
-  phần câu chuyện phi tuyến.
+![Main synthetic results](../results/figures/phase_t_main_variance_vs_n.png)
 
-### 6.2. Nhịp 2 (P′→T′, lượng tử) — CHƯA BẮT ĐẦU
+**T.2 — `HybridTEEstimator`** (`src/pqrst/estimators/hybrid.py`): KSG cho N<50,
+Amortized cho N≥50. Phát hiện + sửa 1 bug thật lúc validate: ngưỡng ban đầu 30
+(đúng cho tuyến tính) khiến Hybrid chọn nhầm Amortized tại N=30 trên dữ liệu
+periodic (variance KSG 0.00636 < Amortized 0.00717 ở đó) — đã sửa ngưỡng chung
+thành 50, an toàn trên cả 2 loại dữ liệu. Test hồi quy thật (`test_hybrid.py`,
+4 test) đã tự verify không vô nghĩa (test cũ từng luôn-đúng bất kể ngưỡng, đã
+thay bằng assertion có thể fail thật).
+
+**T.3 — Hiệu chỉnh bias (tuỳ chọn, đã làm thêm):** leave-one-config-out trên
+`Amortized` (và cả `KSG` để so sánh công bằng) — `Amortized_calibrated` thắng MSE
+liên tục N=20–100 trên Linear VAR, và thắng **mọi N** (10→200) trên Periodic
+Coupling, kể cả sau khi calibrate KSG. Bias của Amortized ổn định theo N (dễ hiệu
+chỉnh); bias của KSG trên dữ liệu phi tuyến biến động mạnh giữa config (hiệu
+chỉnh làm nó TỆ hơn ở hầu hết N trên periodic) — sự khác biệt này là 1 luận điểm
+đáng đưa vào Discussion. **Chỉ là ablation synthetic, không áp dụng lên dữ liệu
+thật, không ảnh hưởng tiêu chí thoát.**
+
+![Bias calibration MSE](../results/figures/phase_t_bias_calibration_mse.png)
+
+**Test suite:** `test_hybrid.py` + `test_calibration.py` — 7/7 PASS (đã tự chạy
+lại với `JAVA_HOME` set để test tích hợp KSG+Amortized chạy thật).
+
+**Checklist thoát Pha T:** Nhóm A (tổng hợp, bắt buộc) ✅ · Nhóm B (tuỳ chọn) ✅ ·
+Nhóm D (test) ✅ · Nhóm C (bản thảo T.6 + review T.7) — **chưa làm, gác lại theo
+quyết định báo cáo mentor trước.**
+
+---
+
+## 7. Tiếp theo: bản thảo và Nhịp 2
+
+### 7.1. Viết bản thảo (T.6, T.7) — CHƯA BẮT ĐẦU
+
+Toàn bộ số liệu/hình/lập luận đã đầy đủ từ `PHASE_P/Q/R/S/T_REPORT.md` — phần
+việc còn lại là **tổ chức lại thành văn bản mạch lạc** (Abstract→Conclusion),
+không phải tìm thêm bằng chứng mới. Đây là việc của chủ dự án; Claude hỗ trợ soát
+câu chữ/dịch từng đoạn khi được yêu cầu. Sau khi có bản thảo: T.7 review đối
+chiếu số liệu 100% khớp báo cáo gốc.
+
+**Cổng quyết định sau Pha T:** kết quả hiện tại (Amortized thắng rõ N≥30 trên dữ
+liệu tuyến tính, thua KSG trên phi tuyến/dữ liệu thật thô — nhưng thắng cả MSE
+sau hiệu chỉnh bias trên synthetic) là "kết quả có câu chuyện, ngang bằng" theo
+phân loại roadmap gốc → **vẫn đáng sang Nhịp 2**, hạ kỳ vọng phần câu chuyện phi
+tuyến.
+
+### 7.2. Nhịp 2 (P′→T′, lượng tử) — CHƯA BẮT ĐẦU
 
 Chưa có dòng code nào. Tái dùng nguyên `src/pqrst/data/`, `data/processed/`,
 pipeline đánh giá — chỉ viết `src/pqrst/estimators/quantum/wrapper.py`
@@ -502,19 +541,22 @@ Nhịp 2, dùng Nhịp 1 làm bản thảo hoàn chỉnh — không phải rủi
 
 ---
 
-## 7. Đánh giá quy mô còn lại
+## 8. Đánh giá quy mô còn lại
 
 | Mục tiêu | Còn lại | Ước tính |
 |---|---|---|
-| Nộp Q1/Q2 chỉ dựa trên Nhịp 1 | Chủ yếu viết bản thảo, không còn nhiều code lớn | Gần cán đích |
+| Nộp Q1/Q2 chỉ dựa trên Nhịp 1 | Code đã xong 100% — chỉ còn viết bản thảo (T.6) + review (T.7) | Gần cán đích |
 | Làm đủ cả 2 Nhịp (đúng scope gốc) | Toàn bộ Nhịp 2 (P′-T′) — 1 chu kỳ đầy đủ, tái dùng hạ tầng nên rẻ hơn xây từ đầu | Còn khá nhiều (~2-3 tháng theo ước tính gốc roadmap) |
 
 ---
 
-## 8. Việc linh tinh chưa xử lý
+## 9. Việc linh tinh chưa xử lý
 
-- `verify_lyapunov.py` ở gốc repo — file scratch từ rất lâu, chưa track, đã hỏi
-  nhiều lần chưa quyết định giữ hay xoá.
+- `results/figures/*` và `results/tables/*` đang bị `.gitignore` loại — mọi hình
+  tham chiếu trong các báo cáo (kể cả Pha T) hiện KHÔNG có trong lịch sử git. Cần
+  quyết định: force-add đích danh các file được tham chiếu, hoặc chấp nhận chỉ
+  xem local (đã có sẵn lệnh `git add` chỉ định file cụ thể vẫn add được dù bị
+  ignore, sẽ có cảnh báo nhưng không phải lỗi).
 
 ---
 
@@ -526,3 +568,4 @@ Nhịp 2, dùng Nhịp 1 làm bản thảo hoàn chỉnh — không phải rủi
 | Q | [`PHASE_Q_REPORT.md`](PHASE_Q_REPORT.md) | `train_mine_smoke_test.py` |
 | R (+R2) | [`PHASE_R_REPORT.md`](PHASE_R_REPORT.md) | `phase_r_01..05_*.ipynb`, `phase_r2_periodic_01..04_*.ipynb` |
 | S | [`PHASE_S_REPORT.md`](PHASE_S_REPORT.md), [`PHASE_S_REVIEW.md`](PHASE_S_REVIEW.md) | `phase_s_00..05_*.ipynb` |
+| T | [`PHASE_T_REPORT.md`](PHASE_T_REPORT.md) | `phase_t_01_main_results.ipynb`, `phase_t_02_hybrid_validation.ipynb`, `phase_t_03_bias_calibration.ipynb` |

@@ -214,21 +214,25 @@ bản thảo cuối là rủi ro cao nhất, dễ tránh nhất.
 
 ## 8. Checklist thoát Pha T
 
+> **Cập nhật 2026-09-15:** Nhóm A/B/D đã xong. Kết quả chi tiết + số liệu thật ở
+> [`PHASE_T_REPORT.md`](PHASE_T_REPORT.md). Nhóm C (bản thảo) gác lại theo quyết
+> định của chủ dự án — cần báo cáo mentor với kết quả T.1-T.3 trước.
+
 **Nhóm A — Tổng hợp (bắt buộc):**
-- [ ] `run_main_experiment.py` đọc + gộp bảng linear/periodic/real-data thành 1 bộ kết quả chính
-- [ ] `HybridTEEstimator` implement + validate trên lưới đã có
-- [ ] Hình gộp linear+periodic+hybrid mới
+- [x] `phase_t_01_main_results.ipynb` đọc + gộp bảng linear/periodic/real-data thành 1 bộ kết quả chính — đã khớp lại 100% với `PHASE_S_REPORT.md` mục 5.4
+- [x] `HybridTEEstimator` implement + validate trên lưới đã có — bug ngưỡng 30→50 đã tìm và sửa
+- [x] Hình gộp linear+periodic+hybrid mới — `phase_t_main_variance_vs_n.png`
 
 **Nhóm B — Tuỳ chọn (không chặn):**
-- [ ] Hiệu chỉnh bias cho Amortized (bỏ được nếu thiếu thời gian)
+- [x] Hiệu chỉnh bias cho Amortized — làm thêm cả fairness check trên KSG, xem `PHASE_T_REPORT.md` mục 4
 
 **Nhóm C — Bản thảo (bắt buộc):**
-- [ ] Bản thảo đầy đủ Abstract→Conclusion
-- [ ] Toàn bộ hình dịch nhãn (nếu nộp tạp chí tiếng Anh)
-- [ ] Review đối chiếu số liệu 100% khớp báo cáo gốc
+- [ ] Bản thảo đầy đủ Abstract→Conclusion (T.6) — gác lại, chờ báo cáo mentor
+- [x] Toàn bộ hình dịch nhãn tiếng Anh (`phase_r_ablation_*`, `phase_s_bidirectional_te` đã dịch lại; hình mới T.1/T.3 tiếng Anh từ đầu)
+- [ ] Review đối chiếu số liệu 100% khớp báo cáo gốc (T.7 — làm sau khi có bản thảo)
 
 **Nhóm D — Chất lượng:**
-- [ ] `pytest -q` toàn bộ pass (bao gồm test mới cho `HybridTEEstimator`)
+- [x] `pytest -q` cho `test_hybrid.py` + `test_calibration.py` — 7/7 pass (đã tự chạy lại với `JAVA_HOME` set)
 
 ---
 
