@@ -12,6 +12,10 @@
 > Nếu cần làm rõ RIÊNG input/output/research gap (không lẫn với tiến độ), xem
 > [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md). Toàn bộ hình ảnh minh chứng
 > tổng hợp theo thứ tự giai đoạn: [`FIGURES_APPENDIX.md`](FIGURES_APPENDIX.md).
+> So sánh với nghiên cứu khác + giải thích kiểm soát rò rỉ dữ liệu:
+> [`LITERATURE_COMPARISON_AND_LEAKAGE.md`](LITERATURE_COMPARISON_AND_LEAKAGE.md).
+> Trả lời từng góp ý cụ thể của mentor (thông số model, hình gap, PCA đặc trưng):
+> [`MENTOR_FEEDBACK_RESPONSE.md`](MENTOR_FEEDBACK_RESPONSE.md).
 
 **Cập nhật lần cuối:** 2026-09-15.
 

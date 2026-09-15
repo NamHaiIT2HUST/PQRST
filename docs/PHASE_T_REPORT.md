@@ -5,10 +5,11 @@
 > `PHASE_P/Q/R/S_REPORT.md`.
 
 **Phạm vi đã hoàn thành:** T.1 (tổng hợp kết quả chính), T.2 (HybridTEEstimator),
-T.3 (hiệu chỉnh bias + kiểm tra công bằng KSG). **Chưa làm** (theo quyết định của
-chủ dự án — cần báo cáo mentor trước): T.6 (viết bản thảo), T.7 (review nội bộ
-trước khi nộp). T.4 (hạ tầng thống kê) không cần việc riêng — đã tái dùng nguyên
-từ Pha S trong T.1.
+T.3 (hiệu chỉnh bias + kiểm tra công bằng KSG), **T.3b (phân tích không gian đặc
+trưng bằng PCA — bổ sung theo yêu cầu mentor, xem mục 5)**. **Chưa làm** (theo
+quyết định của chủ dự án — cần báo cáo mentor trước): T.6 (viết bản thảo), T.7
+(review nội bộ trước khi nộp). T.4 (hạ tầng thống kê) không cần việc riêng — đã
+tái dùng nguyên từ Pha S trong T.1.
 
 ---
 
@@ -160,7 +161,72 @@ thô, không dùng calibration này. Không ảnh hưởng tiêu chí thoát ch�
 
 ---
 
-## 5. Test suite
+## 5. T.3b — Phân tích không gian đặc trưng (PCA theo từng khối mạng)
+
+**Bối cảnh:** sau khi xem T.1–T.3, mentor yêu cầu làm rõ thêm 3 điểm: (a) thông số
+mô hình cụ thể, (b) một hình ảnh **trực diện** thể hiện "gap" (không chỉ suy ra từ
+số liệu), (c) đổi câu chuyện từ "khi nào dùng cổ điển/khi nào dùng học máy" sang
+**chứng minh kiến trúc mạng có phù hợp với phân phối dữ liệu thật hay không**, có
+góc nhìn toán học, không chỉ so sánh thực nghiệm "ai thắng ai".
+
+**(a) Thông số mô hình** (`MaskedStatisticsNetwork`, `src/pqrst/estimators/mine/amortized.py`):
+MLP 4→128→128→64→1 (ELU giữa các lớp ẩn) — **25.473 tham số** (bản chính); bản
+ablation `[16,16]` chỉ **369 tham số**. Huấn luyện: Adam lr=0.001, tối đa 100 epoch
+(patience 15), 27.000 cửa sổ train+val (5 mức ghép nối × 3 mức nhiễu × 6 giá trị N
+× 300 cửa sổ/ô) + 7.200 cửa sổ test sinh bằng seed hoàn toàn khác.
+
+**(b)+(c) Phương pháp:** viết `notebooks/phase_t_04_pca_feature_analysis.ipynb` — trích
+xuất activation SAU MỖI lớp Linear+ELU (không dùng lại `estimate()` vì hàm đó chỉ
+trả về 1 số TE cuối, không giữ activation trung gian), chạy forward tay theo
+ĐÚNG cách `train_amortized()` đã dựng batch (joint = cặp thật; marginal = xáo
+trộn `x_lag,y_lag` trong cùng cửa sổ — đúng cách tính DV bound, xem `losses.py`).
+Mỗi cửa sổ → 1 điểm đại diện (trung bình activation qua cửa sổ) → PCA 2 chiều
+riêng cho từng khối (Input, Block 1, Block 2, Block 3 — trước lớp Linear cuối).
+
+**Kết quả 1 — PCA tô theo cường độ ghép nối `c` thật (dữ liệu synthetic):**
+
+![PCA theo coupling](../results/figures/phase_t_pca_blocks_by_coupling.png)
+
+Ở lớp Input, các điểm gần như trùng nhau — đây là hệ quả TẤT NHIÊN của chuẩn hoá
+z-score theo từng cửa sổ (trung bình cửa sổ luôn ≈0), không phải lỗi. Từ Block 1
+trở đi, các điểm bắt đầu tách dần theo giá trị `c`, rõ nhất ở Block 3 (vùng `c`
+cao và `c` thấp tách thành 2 miền khá rõ) — cho thấy mạng học được biểu diễn có
+liên hệ thật với cường độ ghép nối, không phải học ngẫu nhiên.
+
+**Kết quả 2 — PCA joint vs marginal (đúng bản chất toán học của DV bound):**
+
+![PCA joint vs marginal](../results/figures/phase_t_pca_blocks_joint_vs_marginal.png)
+
+Tách biệt **hoàn toàn rõ ràng** ngay từ Block 1, giữ nguyên đến Block 3. Đây
+chính là điều lý thuyết Donsker-Varadhan yêu cầu mạng phải học được (phân biệt
+cặp thật P(X,Y) với cặp xáo trộn/marginal) để chặn dưới MI có nghĩa — hình này
+chứng minh trực tiếp bằng hình học rằng mạng đã học đúng đối tượng toán học của
+bài toán, không chỉ "cho ra số đẹp".
+
+**Kết quả 3 — Domain gap trong không gian đặc trưng (chiếu dữ liệu thật vào PCA
+đã fit trên synthetic, KHÔNG fit lại):**
+
+![PCA domain gap](../results/figures/phase_t_pca_domain_gap.png)
+
+Dữ liệu thật (Fantasia, tam giác đỏ) nằm **tách biệt hoàn toàn** khỏi vùng dữ
+liệu synthetic ở MỌI khối, càng rõ hơn ở khối sâu (Block 3). Đây là minh chứng
+hình ảnh trực tiếp cho phát hiện domain-generalization đã có ở Pha S (Amortized
+FAIL trên dữ liệu thật) — giờ thấy được NGUYÊN NHÂN hình học: dữ liệu thật rơi
+ra ngoài hẳn không gian mà mạng đã học, nên biểu diễn nội tại (và do đó ước
+lượng cuối) không còn đáng tin ở đó.
+
+**Ý nghĩa cho câu chuyện bản thảo:** đóng góp không còn dừng ở "so sánh thực
+nghiệm ai thắng ai theo N" mà mở rộng thành: (i) mạng học được biểu diễn phù hợp
+với cấu trúc thật của dữ liệu tuyến tính đã train (Kết quả 1), (ii) biểu diễn đó
+đúng theo yêu cầu toán học của DV bound (Kết quả 2), và (iii) khi dữ liệu lệch
+domain, có thể NHÌN THẤY và ĐỊNH LƯỢNG được sự lệch đó ngay trong không gian đặc
+trưng trước khi nó thể hiện ra ở số TE cuối cùng (Kết quả 3) — đây là một hướng
+chẩn đoán/giải thích (diagnostic) có thể tổng quát cho các bài toán amortized MI
+khác, không riêng TE tim–hô hấp.
+
+---
+
+## 6. Test suite
 
 ```
 tests/test_calibration.py, tests/test_hybrid.py — 7 passed (JAVA_HOME đã set để
@@ -169,12 +235,13 @@ test_hybrid_integration chạy KSG+Amortized thật, không chỉ mock/skip)
 
 ---
 
-## 6. Checklist thoát Pha T (cập nhật)
+## 7. Checklist thoát Pha T (cập nhật)
 
 **Nhóm A — Tổng hợp (bắt buộc):** ✅ xong cả 3 mục (T.1 tổng hợp, T.2 Hybrid, hình
 gộp linear+periodic+hybrid).
 
-**Nhóm B — Tuỳ chọn:** ✅ đã làm thêm (T.3 hiệu chỉnh bias + kiểm tra công bằng).
+**Nhóm B — Tuỳ chọn:** ✅ đã làm thêm (T.3 hiệu chỉnh bias + kiểm tra công bằng;
+T.3b phân tích PCA không gian đặc trưng theo yêu cầu mentor).
 
 **Nhóm C — Bản thảo (bắt buộc, CHƯA làm — quyết định gác lại để báo cáo mentor
 trước):**
