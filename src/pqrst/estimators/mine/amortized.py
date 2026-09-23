@@ -165,6 +165,8 @@ def train_amortized(
     val_windows: list,
     config: AmortizedTrainConfig,
     model_factory: Callable[[], nn.Module] | None = None,
+    use_ema_correction: bool = False,
+    ema_momentum: float = 0.01,
 ) -> tuple[AmortizedTEEstimator, dict]:
     """Train T_phi tren corpus da cau hinh (danh sach Window tu corpus.py).
 
@@ -172,6 +174,13 @@ def train_amortized(
     FourierFeatureStatisticsNetwork trong Pha P'.0 - xem classical_fourier.py),
     miem la forward(y_t, x_lag, y_lag, mask) -> (batch,). Mac dinh (None) giu
     NGUYEN hanh vi cu: MaskedStatisticsNetwork(config.hidden_dims).
+
+    use_ema_correction: mac dinh False - GIU NGUYEN hanh vi cu (dung
+    donsker_varadhan_loss() thuong) cho MaskedStatisticsNetwork/checkpoint da co.
+    Dat True de dung donsker_varadhan_loss_ema() (losses.py) - THEM vao khi phat
+    hien FourierFeatureStatisticsNetwork sup do ve nghiem T=const duoi loss thuong
+    (xem docs/NHIP2_GUIDE.md muc 2.1). Giu 2 EMA rieng (nhanh full/reduced) qua
+    SUOT qua trinh train (khong reset theo epoch).
 
     KHAC BIET COT LOI so voi train_mine cua Pha Q:
         - Pha Q: 1 batch = mot mo mau ROI RAC lay tu 1 cau hinh duy nhat.
@@ -217,9 +226,14 @@ def train_amortized(
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     from collections import deque
-    from pqrst.estimators.mine.losses import shuffle_batch, donsker_varadhan_loss
+    from pqrst.estimators.mine.losses import (
+        shuffle_batch, donsker_varadhan_loss, donsker_varadhan_loss_ema,
+    )
 
     from pqrst.utils.standardize import standardize_window
+
+    ma_et_full = None
+    ma_et_reduced = None
 
     def prep_window(w):
         y_t, x_lag, y_lag = w.y_t, w.x_lag, w.y_lag
@@ -294,15 +308,24 @@ def train_amortized(
                 mask_full = torch.ones((N, 1), dtype=torch.float32)
                 mask_red = torch.zeros((N, 1), dtype=torch.float32)
                 
-                for mask in (mask_full, mask_red):
+                for mask, is_full in ((mask_full, True), (mask_red, False)):
                     t_joint = model(ty_t, tx_lag, ty_lag, mask)
-                    
+
                     # 1 shuffle for train is standard, or config.eval_n_shuffles?
                     # The prompt says "danh gia tren val_windows... KHONG dung 1 lan shuffle". For train, 1 is fine to keep it fast, but let's just use 1.
                     perm_idx = torch.randperm(N)
                     t_marg = model(ty_t, tx_lag[perm_idx], ty_lag[perm_idx], mask)
-                    
-                    loss_w = donsker_varadhan_loss(t_joint, t_marg)
+
+                    if use_ema_correction:
+                        ma_et = ma_et_full if is_full else ma_et_reduced
+                        loss_w, _, ma_et_new = donsker_varadhan_loss_ema(
+                            t_joint, t_marg, ma_et, momentum=ema_momentum)
+                        if is_full:
+                            ma_et_full = ma_et_new
+                        else:
+                            ma_et_reduced = ma_et_new
+                    else:
+                        loss_w = donsker_varadhan_loss(t_joint, t_marg)
                     group_losses.append(loss_w)
                     
             if not group_losses:

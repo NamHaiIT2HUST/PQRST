@@ -15,11 +15,25 @@ from pqrst.data.synthetic.corpus import Window
 def test_fourier_network_param_count_is_small():
     model = FourierFeatureStatisticsNetwork(n_harmonics=4)
     n_params = sum(p.numel() for p in model.parameters())
-    # encode_w(4) + encode_b(4) + readout(4*2*4 + 1 = 33) = 41
-    assert n_params == 41
+    # encode_w/encode_b la buffer CO DINH (khong train, xem "SUA" trong module) -
+    # chi readout la tham so hoc duoc: 4*2*4 + 1 = 33
+    assert n_params == 33
     # Phai nho hon han T_phi chinh (25473) - dung tinh than "it tham so hon nhieu"
     n_params_main = sum(p.numel() for p in MaskedStatisticsNetwork([128, 128, 64]).parameters())
     assert n_params < n_params_main / 100
+
+
+def test_fourier_network_encoding_is_fixed_not_trainable():
+    """Regression test dung cho bug da tim thay: neu encode_w/encode_b la
+    nn.Parameter (hoc duoc), DV bound sup do ve nghiem tam thuong T=const ngay
+    epoch dau (val loss ~0 suot qua trinh train tren du lieu thuc - xem
+    results/figures/phase_p2_fourier_linear_loss.png). Test nay dam bao chi co
+    readout la tham so, encode_w/b la buffer."""
+    model = FourierFeatureStatisticsNetwork(n_harmonics=4)
+    trainable_names = {name for name, _ in model.named_parameters()}
+    assert trainable_names == {"readout.weight", "readout.bias"}
+    assert "encode_w" not in trainable_names
+    assert "encode_b" not in trainable_names
 
 
 def test_fourier_network_forward_shape_and_no_nan():
@@ -110,6 +124,25 @@ def test_train_amortized_accepts_custom_model_factory():
     )
     assert isinstance(estimator.model, FourierFeatureStatisticsNetwork)
     assert np.isfinite(history["final_val_loss"])
+
+
+def test_train_amortized_ema_correction_runs_and_is_opt_in():
+    """use_ema_correction=True phai chay khong loi va cho gia tri huu han. Mac dinh
+    (khong truyen) phai giu NGUYEN hanh vi cu - da co test rieng
+    (test_train_amortized_model_factory_preserves_default_architecture)."""
+    train_windows = [_make_window(i) for i in range(4)]
+    val_windows = [_make_window(100 + i) for i in range(2)]
+    config = AmortizedTrainConfig(
+        max_epochs=3, patience=5, windows_per_batch=2,
+        eval_n_shuffles=2, final_estimate_last_k_epochs=1,
+    )
+    estimator, history = train_amortized(
+        train_windows, val_windows, config,
+        model_factory=lambda: FourierFeatureStatisticsNetwork(n_harmonics=3),
+        use_ema_correction=True,
+    )
+    assert np.isfinite(history["final_val_loss"])
+    assert all(np.isfinite(v) for v in history["train_loss_history"])
 
 
 def test_fourier_estimator_estimate_via_amortized_wrapper():

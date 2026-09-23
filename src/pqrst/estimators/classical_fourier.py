@@ -34,16 +34,30 @@ class FourierFeatureStatisticsNetwork(nn.Module):
     (batch, 1), giong DUNG MaskedStatisticsNetwork.forward.
     """
 
-    def __init__(self, n_harmonics: int = 4):
+    def __init__(self, n_harmonics: int = 4, encode_seed: int = 0):
         super().__init__()
         self.n_harmonics = n_harmonics
-        # Phep encode tuyen tinh hoc duoc cho tung chieu dau vao (4 chieu:
-        # y_t, x_lag_masked, y_lag, mask) - tuong tu goc quay encode 1 tham so
-        # dau vao cua 1 qubit trong mach data re-uploading.
-        self.encode_w = nn.Parameter(torch.randn(4) * 0.5)
-        self.encode_b = nn.Parameter(torch.zeros(4))
+        # SUA (phat hien qua chay thu): ban dau de encode_w/encode_b la
+        # nn.Parameter HOC DUOC bi SUP DO ve nghiem tam thuong T=const cua DV
+        # bound (T const -> DV bound = 0 CHINH XAC voi MOI tham so - day la 1
+        # saddle point luon ton tai cua chinh ham loss, khong phai bug rieng o
+        # day). Model hoc duoc gan nhu ngay epoch 1 roi ket dinh o do (val loss
+        # ~0.0000 suot qua trinh, xem results/figures/phase_p2_fourier_linear_loss.png).
+        #
+        # SUA: CO DINH encode_w/encode_b (khong train) voi gia tri da da dang tu
+        # dau - dung DUNG cong thuc Random Fourier Features (Rahimi & Recht 2007):
+        # encoding co dinh + CHI train lop doc ra tuyen tinh. Dam bao dac trung
+        # sin/cos da khac nhau ro giua cac cua so tu epoch 0, khong con duong nao
+        # de sup do ve T=const (vi muon T=const, readout phai HOC ve 0 CHINH XAC -
+        # kem hap dan hon nhieu so voi truong hop encode cung hoc duoc ve 0).
+        rng = torch.Generator().manual_seed(encode_seed)
+        encode_w = torch.randn(4, generator=rng) * 1.5 + torch.sign(torch.randn(4, generator=rng))
+        encode_b = torch.rand(4, generator=rng) * 2 * torch.pi
+        self.register_buffer("encode_w", encode_w)
+        self.register_buffer("encode_b", encode_b)
         # Doc ra: to hop tuyen tinh cua sin/cos tai cac hoa am 1..n_harmonics,
         # cho ca 4 chieu -> dung la 1 chuoi Fourier rieng phan cua du lieu.
+        # DAY la phan DUY NHAT co tham so hoc duoc.
         self.readout = nn.Linear(4 * 2 * n_harmonics, 1)
         harmonics = torch.arange(1, n_harmonics + 1, dtype=torch.float32)
         self.register_buffer("harmonics", harmonics)
