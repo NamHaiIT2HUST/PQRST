@@ -13,14 +13,39 @@ from pqrst.data.synthetic.corpus import Window
 
 
 def test_fourier_network_param_count_is_small():
-    model = FourierFeatureStatisticsNetwork(n_harmonics=4)
+    model = FourierFeatureStatisticsNetwork(n_harmonics=4, n_directions=5)
     n_params = sum(p.numel() for p in model.parameters())
     # encode_w/encode_b la buffer CO DINH (khong train, xem "SUA" trong module) -
-    # chi readout la tham so hoc duoc: 4*2*4 + 1 = 33
-    assert n_params == 33
+    # chi readout la tham so hoc duoc: n_directions*2*n_harmonics + 1 = 5*2*4+1 = 41
+    assert n_params == 41
     # Phai nho hon han T_phi chinh (25473) - dung tinh than "it tham so hon nhieu"
     n_params_main = sum(p.numel() for p in MaskedStatisticsNetwork([128, 128, 64]).parameters())
     assert n_params < n_params_main / 100
+
+
+def test_fourier_network_is_not_additively_separable():
+    """Test hoi quy dung cho loi da tim thay (xem module docstring "LOI DA TIM VA
+    SUA"): ban dau moi chieu dau vao duoc encode RIENG, khien T(y_t,x_lag,y_lag,mask)
+    = f(y_t)+g(x_lag)+h(y_lag)+k(mask) - TACH ROI CONG TINH, khong co tuong tac X-Y.
+    Kiem tra truc tiep: doi x_lag PHAI lam thay doi output theo cach phu thuoc vao
+    gia tri CU THE cua y_t/y_lag (khong phai 1 do lech CONG THEM co dinh giong nhau
+    cho moi y_t/y_lag) - day la dau hieu cua ham KHONG tach roi cong tinh."""
+    torch.manual_seed(0)
+    model = FourierFeatureStatisticsNetwork(n_harmonics=4, n_directions=5)
+    mask = torch.ones(2, 1)
+
+    y_t_a = torch.tensor([[-2.0], [2.0]])
+    y_lag_a = torch.tensor([[-2.0], [2.0]])
+    x_lag_1 = torch.tensor([[0.3], [0.3]])
+    x_lag_2 = torch.tensor([[1.7], [1.7]])
+
+    out_1 = model(y_t_a, x_lag_1, y_lag_a, mask)
+    out_2 = model(y_t_a, x_lag_2, y_lag_a, mask)
+    diff = (out_2 - out_1)
+
+    # Neu tach roi cong tinh: diff[0] phai == diff[1] (cung 1 do lech g(x2)-g(x1)
+    # CONG THEM vao moi dong, khong phu thuoc y_t/y_lag). Kiem tra CHUNG KHAC nhau.
+    assert not torch.isclose(diff[0], diff[1], atol=1e-4)
 
 
 def test_fourier_network_encoding_is_fixed_not_trainable():

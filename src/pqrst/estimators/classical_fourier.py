@@ -6,16 +6,30 @@ Co so ly thuyet (Schuld, Sweke & Meyer, Physical Review A 103, 032430, 2021):
 mot mach luong tu kieu data re-uploading tuong duong ve mat toan hoc voi 1 chuoi
 Fourier RIENG PHAN cua du lieu dau vao - tap tan so truy cap duoc quyet dinh boi
 cach lap lai cong encode. Model duoi day mo phong DUNG cau truc do bang cach co
-dien (khong dung mach luong tu nao): 1 phep encode tuyen tinh hoc duoc, roi lay
-cac hoa am (harmonics) nguyen cua no, roi doc ra bang 1 lop tuyen tinh - giu so
-tham so RAT nho (~vai chuc), cung bac do lon voi 1 mach luong tu nho du kien
+dien (khong dung mach luong tu nao): du lieu duoc CHIEU qua 1 ma tran co dinh
+(Random Fourier Features nhieu chieu, Rahimi & Recht 2007), roi lay cac hoa am
+(harmonics) nguyen cua tich vo huong do, roi doc ra bang 1 lop tuyen tinh - giu
+so tham so RAT nho (~vai chuc), cung bac do lon voi 1 mach luong tu nho du kien
 (6-8 qubit x 3-5 lop).
 
-Neu model nay CUNG cai thien duoc o N nho / domain gap nhu T_phi (MLP lon) thi
-tin hieu tot co the den tu chinh dang ham Fourier, khong nhat thiet can luong
-tu thuc - can noi ro dieu nay khi bien minh cho Nhip 2 (xem docs/NHIP2_GUIDE.md
-muc 1). Neu KHONG cai thien gi, cau chuyen can luong tu thuc (entanglement)
-manh hon.
+LOI DA TIM VA SUA (quan trong, ghi lai de khong tai pham o Nhip 2): ban dau
+(SUA lan 1) moi chieu dau vao (y_t, x_lag, y_lag, mask) duoc encode RIENG BIET
+roi moi ghep tuyen tinh o lop doc ra - khien T(y_t,x_lag,y_lag,mask) chi co the
+la ham TACH ROI CONG TINH f(y_t)+g(x_lag)+h(y_lag)+k(mask), KHONG co so hang
+tuong tac X-Y nao. Co the CHUNG MINH BANG TOAN (bat dang thuc Jensen ap tren
+phan phoi marginal cua chinh chan duoi Donsker-Varadhan): voi T tach roi cong
+tinh, gia tri toi uu TUYET DOI cua DV bound LA DUNG 0, bat ke train bao lau/
+bang cach nao (khong phai bay toi uu hoa hay bat on dinh gradient - da thu ca
+EMA-correction va tang windows_per_batch, van sup do dung 0, vi day la diem toi
+uu THAT cua chinh lop ham bi han che). SUA lan 2 (ban hien tai): chieu ca 4
+chieu dau vao CUNG LUC qua 1 huong ngau nhien truoc khi lay hoa am, tao so hang
+tuong tac X-Y thuc su - xem docs/NHIP2_GUIDE.md muc 2.1 de biet chi tiet qua
+trinh phat hien.
+
+Neu model nay (da sua) CUNG cai thien duoc o N nho / domain gap nhu T_phi (MLP
+lon) thi tin hieu tot co the den tu chinh dang ham Fourier, khong nhat thiet
+can luong tu thuc. Neu KHONG cai thien gi, cau chuyen can luong tu thuc
+(entanglement) manh hon.
 
 Cung interface forward(y_t, x_lag, y_lag, mask) nhu MaskedStatisticsNetwork
 (amortized.py) - nen cam duoc thang vao estimate_te_from_window() va
@@ -28,37 +42,33 @@ import torch.nn as nn
 
 
 class FourierFeatureStatisticsNetwork(nn.Module):
-    """T_phi dang Fourier features co dien - xem module docstring o tren.
+    """T_phi dang Fourier features co dien - xem module docstring o tren (DAC
+    BIET chu y phan "LOI DA TIM VA SUA" truoc khi doc code duoi day).
 
     forward nhan 4 dau vao (y_t, x_lag*mask, y_lag, mask), moi cai shape
     (batch, 1), giong DUNG MaskedStatisticsNetwork.forward.
     """
 
-    def __init__(self, n_harmonics: int = 4, encode_seed: int = 0):
+    def __init__(self, n_harmonics: int = 4, n_directions: int = 5, encode_seed: int = 0):
         super().__init__()
         self.n_harmonics = n_harmonics
-        # SUA (phat hien qua chay thu): ban dau de encode_w/encode_b la
-        # nn.Parameter HOC DUOC bi SUP DO ve nghiem tam thuong T=const cua DV
-        # bound (T const -> DV bound = 0 CHINH XAC voi MOI tham so - day la 1
-        # saddle point luon ton tai cua chinh ham loss, khong phai bug rieng o
-        # day). Model hoc duoc gan nhu ngay epoch 1 roi ket dinh o do (val loss
-        # ~0.0000 suot qua trinh, xem results/figures/phase_p2_fourier_linear_loss.png).
-        #
-        # SUA: CO DINH encode_w/encode_b (khong train) voi gia tri da da dang tu
-        # dau - dung DUNG cong thuc Random Fourier Features (Rahimi & Recht 2007):
-        # encoding co dinh + CHI train lop doc ra tuyen tinh. Dam bao dac trung
-        # sin/cos da khac nhau ro giua cac cua so tu epoch 0, khong con duong nao
-        # de sup do ve T=const (vi muon T=const, readout phai HOC ve 0 CHINH XAC -
-        # kem hap dan hon nhieu so voi truong hop encode cung hoc duoc ve 0).
+        self.n_directions = n_directions
+        # CO DINH (khong train) - dung DUNG cong thuc Random Fourier Features
+        # nhieu chieu: moi "huong" k la 1 to hop tuyen tinh CUA CA 4 CHIEU DAU
+        # VAO (z_k = w_k . x + b_k), KHONG encode rieng tung chieu (day chinh la
+        # cho da sua - xem "LOI DA TIM VA SUA" o dau file). Nho vay sin/cos(l*z_k)
+        # co so hang tuong tac giua y_t, x_lag, y_lag - dieu KIEN BAT BUOC de DV
+        # bound co the vuot qua 0.
         rng = torch.Generator().manual_seed(encode_seed)
-        encode_w = torch.randn(4, generator=rng) * 1.5 + torch.sign(torch.randn(4, generator=rng))
-        encode_b = torch.rand(4, generator=rng) * 2 * torch.pi
+        encode_w = torch.randn(n_directions, 4, generator=rng) * 1.5  # (n_directions, 4)
+        encode_b = torch.rand(n_directions, generator=rng) * 2 * torch.pi  # (n_directions,)
         self.register_buffer("encode_w", encode_w)
         self.register_buffer("encode_b", encode_b)
         # Doc ra: to hop tuyen tinh cua sin/cos tai cac hoa am 1..n_harmonics,
-        # cho ca 4 chieu -> dung la 1 chuoi Fourier rieng phan cua du lieu.
-        # DAY la phan DUY NHAT co tham so hoc duoc.
-        self.readout = nn.Linear(4 * 2 * n_harmonics, 1)
+        # cho moi huong chieu -> chuoi Fourier rieng phan cua TICH VO HUONG du
+        # lieu (khong phai cua tung chieu rieng le). DAY la phan DUY NHAT co
+        # tham so hoc duoc.
+        self.readout = nn.Linear(n_directions * 2 * n_harmonics, 1)
         harmonics = torch.arange(1, n_harmonics + 1, dtype=torch.float32)
         self.register_buffer("harmonics", harmonics)
 
@@ -72,10 +82,10 @@ class FourierFeatureStatisticsNetwork(nn.Module):
         x_lag_masked = x_lag * mask
         xy = torch.cat([y_t, x_lag_masked, y_lag, mask], dim=-1)  # (batch, 4)
 
-        z = xy * self.encode_w + self.encode_b  # (batch, 4)
-        angles = z.unsqueeze(-1) * self.harmonics.view(1, 1, -1)  # (batch,4,L)
-        feats = torch.cat([torch.sin(angles), torch.cos(angles)], dim=-1)  # (batch,4,2L)
-        feats = feats.reshape(feats.shape[0], -1)  # (batch, 4*2*L)
+        z = xy @ self.encode_w.T + self.encode_b  # (batch, n_directions) - TRON ca 4 chieu
+        angles = z.unsqueeze(-1) * self.harmonics.view(1, 1, -1)  # (batch, n_directions, L)
+        feats = torch.cat([torch.sin(angles), torch.cos(angles)], dim=-1)  # (batch, n_directions, 2L)
+        feats = feats.reshape(feats.shape[0], -1)  # (batch, n_directions*2*L)
 
         out = self.readout(feats)
         return out.squeeze(-1)
