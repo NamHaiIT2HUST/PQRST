@@ -16,6 +16,7 @@ Nhip 2 (luong tu) se them 1 class tuong tu voi T_theta thay cho T_phi.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Callable
 
 import numpy as np
 import torch
@@ -163,8 +164,14 @@ def train_amortized(
     train_windows: list,
     val_windows: list,
     config: AmortizedTrainConfig,
+    model_factory: Callable[[], nn.Module] | None = None,
 ) -> tuple[AmortizedTEEstimator, dict]:
     """Train T_phi tren corpus da cau hinh (danh sach Window tu corpus.py).
+
+    model_factory: cho phep dung 1 kien truc khac MaskedStatisticsNetwork (vd
+    FourierFeatureStatisticsNetwork trong Pha P'.0 - xem classical_fourier.py),
+    miem la forward(y_t, x_lag, y_lag, mask) -> (batch,). Mac dinh (None) giu
+    NGUYEN hanh vi cu: MaskedStatisticsNetwork(config.hidden_dims).
 
     KHAC BIET COT LOI so voi train_mine cua Pha Q:
         - Pha Q: 1 batch = mot mo mau ROI RAC lay tu 1 cau hinh duy nhat.
@@ -204,7 +211,9 @@ def train_amortized(
     """
     torch.manual_seed(config.seed)
 
-    model = MaskedStatisticsNetwork(hidden_dims=config.hidden_dims)
+    if model_factory is None:
+        model_factory = lambda: MaskedStatisticsNetwork(hidden_dims=config.hidden_dims)
+    model = model_factory()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     from collections import deque
