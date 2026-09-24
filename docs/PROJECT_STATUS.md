@@ -535,15 +535,18 @@ tuyến.
 
 ### 7.2. Nhịp 2 (P′→T′, lượng tử) — CHƯA BẮT ĐẦU
 
-Chưa có dòng code nào. Tái dùng nguyên `src/pqrst/data/`, `data/processed/`,
-pipeline đánh giá — chỉ viết `src/pqrst/estimators/quantum/wrapper.py`
-(`T_theta(x,y)->scalar`, cùng chữ ký `T_phi`) rồi cắm vào `train.py` đã có.
+> Kế hoạch chi tiết đầy đủ: [`NHIP2_GUIDE.md`](NHIP2_GUIDE.md). Chưa có dòng
+> code nào. Tái dùng nguyên `src/pqrst/data/`, `data/processed/`, pipeline
+> đánh giá — chỉ viết `src/pqrst/estimators/quantum/wrapper.py`
+> (`T_theta(x,y)->scalar`, cùng chữ ký `T_phi`) rồi cắm vào `train.py` đã có.
 
-**Cảnh báo quan trọng đã rút ra từ Pha R (mục 4.7):** ablation mạng nhỏ + thử
-nghiệm periodic coupling đều làm suy yếu lý do "ít tham số sẽ giúp ở N nhỏ" — mạch
-lượng tử (cũng ít tham số) nhiều khả năng gặp giới hạn tương tự (nhiễu Monte Carlo
-vốn có của DV bound ở N nhỏ, không phải vấn đề dung lượng mô hình). Nên đặt kỳ
-vọng Nhịp 2 ở vùng N vừa/lớn, không phải N<30.
+**Lý do đầu tư lượng tử đã ĐỔI** so với bản roadmap gốc: giả thuyết cũ "ít tham
+số giúp N nhỏ" đã bị chính ablation mạng nhỏ ở Pha R bác bỏ (mạng `[16,16]`
+không thắng rõ). `NHIP2_GUIDE.md` mục 1 đề xuất lý do mới, cụ thể hơn (dựa trên
+Schuld/Sweke/Meyer 2021 — mạch data re-uploading tương đương chuỗi Fourier
+riêng phần, khác lớp hàm với MLP, không chỉ khác số tham số), và thêm 1 bước
+**P′.0** (ablation Fourier cổ điển + hình thức hoá công cụ PCA từ T.3b) TRƯỚC
+khi viết mạch lượng tử thật, để kiểm định giả thuyết rẻ trước khi đầu tư đắt.
 
 Có cổng dự phòng: ≥2 cấu hình không hội tụ (nghi barren plateau) → có thể dừng
 Nhịp 2, dùng Nhịp 1 làm bản thảo hoàn chỉnh — không phải rủi ro chí mạng.

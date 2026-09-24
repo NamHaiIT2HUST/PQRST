@@ -216,6 +216,22 @@ toàn bộ 27.000 cửa sổ như Pha R. Quy mô mới, thực tế:
 **Exit:** loss giảm ổn định trên tập con; gradient không biến mất (theo dõi
 norm gradient theo epoch).
 
+**Kết quả lần chạy đầu (`phase_p2_01_quantum_training_poc.ipynb`, 128 cửa sổ
+train, N=20, c=0.6, 12 epoch, ~34 phút):**
+- ✅ Loss giảm đều, không sụp đổ về 0 (train 0.005 → -0.008, val 0.0016 → -0.0064) —
+  không lặp lại lỗi tách rời cộng tính của bản Fourier.
+- ✅ Gradient khoẻ ở cả 3 nhóm tham số (encode_scale 0.79, theta 1.42, readout 2.82).
+- ⚠️ **Chưa hội tụ:** loss vẫn đang giảm gần tuyến tính ở epoch 12 (chưa chững).
+  DV bound ước lượng ≈ 0.006 nats — còn rất xa mức bản Fourier đã hội tụ (~0.025)
+  và xa TE thật (0.18) → mô hình mới chỉ "bắt đầu học".
+- ⚠️ **PCA chưa thấy cấu trúc theo `c`** (các điểm trộn lẫn màu) — hợp lý vì mô hình
+  còn non; KHÔNG kết luận gì từ hình này cho tới khi hội tụ.
+
+**Kết luận Q′:** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
+sụp đổ), nhưng **chưa đủ để đi tiếp R′**. Bước kế: train dài hơn (loss chưa chững)
+và/hoặc tăng learning rate (đang 0.001, mô phỏng lượng tử ít bước nên có thể cần
+~0.01), rồi mới đánh giá lại PCA + so với `T_phi`.
+
 **🚦 CỔNG DỰ PHÒNG (giữ nguyên từ `ROADMAP.md`):** ≥2 cấu hình siêu tham số
 không hội tụ (nghi barren plateau) → dừng Nhịp 2, đưa vào bản thảo Nhịp 1 như
 phụ lục/hướng mở — Nhịp 1 đã là bản thảo hoàn chỉnh, không phải rủi ro chí mạng.
