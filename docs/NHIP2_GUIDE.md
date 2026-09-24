@@ -227,7 +227,15 @@ train, N=20, c=0.6, 12 epoch, ~34 phút):**
 - ⚠️ **PCA chưa thấy cấu trúc theo `c`** (các điểm trộn lẫn màu) — hợp lý vì mô hình
   còn non; KHÔNG kết luận gì từ hình này cho tới khi hội tụ.
 
-**Kết luận Q′:** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
+**Lần chạy 2 (lr=0.03, 20 epoch, `phase_p2_02_...`, ~44 phút) — kết quả tốt hơn hẳn:**
+- val loss hội tụ về ≈ -0.14 (DV bound ~0.14 nats; lần 1 chỉ ~0.006), chững lại từ epoch ~8.
+- Gradient khoẻ (encode_scale 12.2, theta 36.7, readout 3.5).
+- **PCA tách theo `c` rõ** (c cao ở dưới-trái, c thấp ở trên-phải) dù CHỈ train trên c=0.6 — tín hiệu sớm là mạch học biểu diễn liên quan cường độ ghép nối, không chỉ ghi nhớ 1 cấu hình.
+- ⚠️ Khoảng cách train (-0.20) vs val (-0.14): có overfit nhẹ do chỉ 128 cửa sổ; và DV bound là trung bình 2 nhánh, chưa phải TE. → cần đo TE thật (notebook `phase_p2_03_quantum_eval_vs_baselines.ipynb`).
+
+**Kết luận Q′ (cập nhật):** ĐẠT (loss hội tụ, gradient sống, không sụp đổ, PCA có cấu trúc). Bước kế = đo TE thật so với KSG/MLP trên tập test độc lập (notebook 03), rồi mới quyết mở rộng R′.
+
+**(Kết luận cũ, lần 1, giữ lại để tham chiếu):** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
 sụp đổ), nhưng **chưa đủ để đi tiếp R′**. Bước kế: train dài hơn (loss chưa chững)
 và/hoặc tăng learning rate (đang 0.001, mô phỏng lượng tử ít bước nên có thể cần
 ~0.01), rồi mới đánh giá lại PCA + so với `T_phi`.
