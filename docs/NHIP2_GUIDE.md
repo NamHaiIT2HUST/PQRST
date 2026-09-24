@@ -106,6 +106,29 @@ giữa qubit encode X và qubit encode Y hay không**, đây là điều kiện 
 bắt buộc để `T_theta` có thể ước lượng TE khác 0, không chỉ là chi tiết thiết
 kế phụ.
 
+**Kết quả cuối (đã chạy đầy đủ, không còn sụp đổ) — trả lời câu hỏi mục 1:**
+
+| N | KSG | Amortized (MLP, 25.473 tham số) | Fourier_classical (41 tham số) |
+|---|---|---|---|
+| **Linear VAR** (MSE) | 0.0170 → 0.0019 | 0.0181 → 0.0039 | 0.0303 → 0.0326 (gần như không đổi) |
+| **Periodic Coupling** (MSE) | 0.0294 → 0.0139 | 0.0210 → 0.0059 | 0.1737 → 0.1962 (gần như không đổi) |
+
+`Fourier_classical` **thua cả KSG và Amortized ở MỌI N, trên CẢ 2 loại dữ
+liệu** — thua đậm nhất trên dữ liệu phi tuyến (periodic). Loss hội tụ ổn định
+có nghĩa (không còn dính ở 0), variance giảm đúng theo N (0.0061→0.00036,
+linear) — đây là số liệu THẬT, không phải sụp đổ, và câu trả lời là rõ ràng:
+**mô hình Fourier cổ điển ít tham số KHÔNG đủ để cải thiện** so với 2 baseline.
+
+**Đọc kết quả này theo đúng khung mục 1:** đây rơi vào nhánh "Fourier cổ điển
+KHÔNG cải thiện gì" → ủng hộ câu chuyện cần lượng tử THẬT (entanglement) mạnh
+hơn, không chỉ dạng hàm Fourier ít tham số. **Nhưng cần nêu 1 giới hạn thật khi
+viết vào bản thảo:** kết quả này chỉ loại trừ được "41 tham số, đúng cấu trúc
+Fourier nhiều chiều" — chưa loại trừ được khả năng đơn giản là CẦN NHIỀU HƠN
+41 tham số cổ điển (vd tăng `n_directions`/`n_harmonics`) mà không cần gì
+"lượng tử" cả. Nếu muốn kết luận chặt hơn nữa trước khi đầu tư PennyLane, có
+thể thử quét `n_directions` lớn hơn (vd 10-20) xem MSE có tiến gần Amortized
+không — đây là việc rẻ, làm thêm được nếu muốn chắc chắn hơn, không bắt buộc.
+
 ### 2.2. Hình thức hoá công cụ chẩn đoán PCA-theo-khối thành module tái dùng
 
 Hiện `notebooks/phase_t_04_pca_feature_analysis.ipynb` là code notebook, viết
@@ -216,7 +239,8 @@ kết quả là có hoặc không), mã nguồn tái lập được từ đầu 
 
 ## 8. Checklist thoát Nhịp 2
 
-- [ ] P′.0: ablation Fourier cổ điển có kết luận rõ + công cụ PCA đã tổng quát hoá (có test)
+- [x] P′.0a: ablation Fourier cổ điển có kết luận rõ (Fourier_classical thua cả KSG và Amortized ở mọi N, 2 loại dữ liệu — ủng hộ hướng cần lượng tử thật, xem mục 2.1)
+- [ ] P′.0b: hình thức hoá công cụ PCA-theo-khối thành module tái dùng (có test) — chưa làm
 - [ ] P′: `T_theta` chạy được, gradient hợp lệ
 - [ ] Q′: loss hội tụ trên cấu hình đơn giản, không barren plateau (hoặc đã kích hoạt cổng dự phòng)
 - [ ] R′: bảng so sánh 5 phương pháp đầy đủ trên synthetic
