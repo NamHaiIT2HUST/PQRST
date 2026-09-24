@@ -33,3 +33,8 @@ wfdb
 mne
 scikit-learn  # can cho mne.preprocessing.ICA (method='fastica') - khu nhieu dien
               # tim khoi EEG capslpdb bang ICA, xem eeg.py::remove_cardiac_artifact_ica
+
+# Nhip 2 (luong tu) - xem docs/NHIP2_GUIDE.md. lightning.qubit nhanh hon
+# default.qubit tren CPU cho mach nho (khong co GPU trong moi truong nay).
+pennylane
+pennylane-lightning

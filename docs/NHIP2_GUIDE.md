@@ -159,35 +159,62 @@ quát hoá, có test.
 
 ---
 
-## 3. Pha P′ — Chuẩn bị mạch lượng tử (3–5 ngày, theo `ROADMAP.md`)
+## 3. Pha P′ — Chuẩn bị mạch lượng tử — ĐÃ XONG
 
-- `src/pqrst/estimators/quantum/circuit.py` — mạch data re-uploading: 6–8 qubit,
-  3–5 lớp, mỗi lớp = (encode dữ liệu qua rotation gates) + (rotation gates có
-  tham số học được) + (entangling layer, CNOT ring).
-- `src/pqrst/estimators/quantum/wrapper.py` — `T_theta(x, y) -> scalar`, **cùng
-  chữ ký với `T_phi`** (interface `BaseTEEstimator`) để cắm thẳng vào hạ tầng
-  đã có (loss, `train.py`, `evaluation/`).
+- [`src/pqrst/estimators/quantum/circuit.py`](../src/pqrst/estimators/quantum/circuit.py)
+  — mạch data re-uploading qua PennyLane (`lightning.qubit`): 6 qubit, 4 lớp,
+  mỗi lớp = encode (RY, `encode_scale` học được) + xoay có tham số (RY,RZ) +
+  entangling (CNOT vòng tròn).
+- [`src/pqrst/estimators/quantum/wrapper.py`](../src/pqrst/estimators/quantum/wrapper.py)
+  — `QuantumStatisticsNetwork`, **cùng chữ ký `forward(y_t,x_lag,y_lag,mask)`**
+  với `T_phi`/`FourierFeatureStatisticsNetwork`, cộng `forward_blocks()` để
+  dùng ngay được với `feature_space.py` (mục 2.2) — không cắm qua class
+  `BaseTEEstimator` riêng, cắm thẳng vào `AmortizedTEEstimator` có sẵn giống
+  cách đã làm ở Pha P′.0. 61 tham số (6 qubit × 4 lớp).
 
-**Exit:** mạch chạy được, output hợp lệ (không NaN), tính được gradient qua ít
-nhất 1 bước (kiểm tra bằng 1 test đơn giản, không cần train thật).
+**Đã áp dụng ĐÚNG bài học từ bug P′.0 (mục 2.1) ngay từ đầu:** có test riêng
+(`test_circuit_is_not_additively_separable`) xác nhận entangling thực sự trộn
+được thông tin giữa qubit encode X và Y — **pass ngay lần đầu**, không lặp lại
+vòng debug đã tốn nhiều công ở bản Fourier cổ điển.
+
+**Exit: ĐẠT** — mạch chạy được, output hợp lệ (không NaN), gradient tính được
+qua mọi tham số (8 test, `tests/test_quantum_circuit.py`, xem mục "Test suite"
+cuối file). Cài `pennylane`+`pennylane-lightning` (đã thêm vào `requirements.txt`).
+
+**⚠️ Phát hiện quan trọng về hiệu suất (ảnh hưởng trực tiếp đến kế hoạch Q′
+dưới đây):** đo trực tiếp trên máy không có GPU — 1 lần forward mạch 6 qubit/4
+lớp trên batch N=200 mẫu tốn **~1.4 giây** (mô phỏng lượng tử cổ điển chậm hơn
+nhiều bậc so với 1 lần forward MLP, vốn chỉ mất micro-giây). Nếu train trên
+TOÀN BỘ corpus 27.000 cửa sổ như `T_phi` ở Pha R (Nhịp 1), ước tính **hàng chục
+giờ MỖI EPOCH** — hoàn toàn không khả thi trên máy hiện tại. **Pha Q′ dưới đây
+đã điều chỉnh lại quy mô cho thực tế** (không phải lỗi, là giới hạn vật lý của
+việc mô phỏng lượng tử bằng máy cổ điển — bản thân đây cũng là 1 điểm đáng nói
+trong bản thảo: động lực thật để dùng phần cứng lượng tử thật, không phải mô
+phỏng).
 
 ---
 
-## 4. Pha Q′ — Hoán đổi có kiểm soát (1.5–3 tuần)
+## 4. Pha Q′ — Hoán đổi có kiểm soát (1.5–3 tuần, ĐÃ ĐIỀU CHỈNH QUY MÔ)
 
-- Cắm `T_theta` vào `train_amortized()` (thêm lựa chọn kiến trúc, tái dùng
-  100% loss/data loader — **không viết lại** `losses.py`/corpus).
-- Gradient qua parameter-shift rule (PennyLane hỗ trợ sẵn) hoặc adjoint
-  differentiation (nhanh hơn trên simulator).
-- Train trên **đúng cấu hình đơn giản nhất** đã dùng ở Pha Q (Nhịp 1, 1 cấu
-  hình VAR cố định) để so sánh apples-to-apples ngay từ đầu, trước khi mở rộng
-  ra toàn corpus.
+**⚠️ Đọc mục 3 (cảnh báo hiệu suất) trước khi làm mục này** — không train trên
+toàn bộ 27.000 cửa sổ như Pha R. Quy mô mới, thực tế:
+
+- Cắm `T_theta` vào `train_amortized()` qua **`model_factory=lambda: QuantumStatisticsNetwork(...)`
+  — hạ tầng này ĐÃ CÓ SẴN** từ Pha P′.0 (thêm cho `FourierFeatureStatisticsNetwork`),
+  không cần sửa gì thêm ở `train_amortized()`/`losses.py`.
+- Gradient qua `diff_method="adjoint"` (đã dùng trong `circuit.py`, nhanh hơn
+  parameter-shift trên simulator — parameter-shift cần 2 lần chạy mạch cho MỖI
+  tham số MỖI mẫu, quá chậm với 61 tham số).
+- **Train trên 1 tập con nhỏ** (gợi ý: 1 cấu hình VAR cố định, vài trăm–1.000
+  cửa sổ, ưu tiên N nhỏ 10–50 để giảm cả số mẫu/cửa sổ) — coi đây là "proof of
+  concept", KHÔNG so apples-to-apples toàn corpus với `T_phi` ở bước này (việc
+  đó dành cho Pha R′, cũng phải thu nhỏ quy mô tương ứng).
 - **Áp ngay công cụ PCA-theo-khối (mục 2.2) lên `T_theta`** — không chờ đến
   Pha T′. Nếu ngay từ Pha Q′ đã thấy `T_theta` học được biểu diễn tách theo
   coupling `c` tốt hơn/khác `T_phi`, đó là tín hiệu sớm rất mạnh.
 
-**Exit:** loss giảm ổn định; gradient không biến mất (theo dõi norm gradient
-theo epoch).
+**Exit:** loss giảm ổn định trên tập con; gradient không biến mất (theo dõi
+norm gradient theo epoch).
 
 **🚦 CỔNG DỰ PHÒNG (giữ nguyên từ `ROADMAP.md`):** ≥2 cấu hình siêu tham số
 không hội tụ (nghi barren plateau) → dừng Nhịp 2, đưa vào bản thảo Nhịp 1 như
@@ -248,7 +275,8 @@ kết quả là có hoặc không), mã nguồn tái lập được từ đầu 
       (model-agnostic qua `forward_blocks()`, đã thêm cho cả `MaskedStatisticsNetwork` và
       `FourierFeatureStatisticsNetwork`, 8 test, đã đối chiếu khớp 100% với hàm gốc trong
       `phase_t_04_pca_feature_analysis.ipynb`)
-- [ ] P′: `T_theta` chạy được, gradient hợp lệ
+- [x] P′: `T_theta` chạy được, gradient hợp lệ (8 test pass, kể cả test entangling
+      không tách rời cộng tính); phát hiện hiệu suất quan trọng cho Q′ (mục 3)
 - [ ] Q′: loss hội tụ trên cấu hình đơn giản, không barren plateau (hoặc đã kích hoạt cổng dự phòng)
 - [ ] R′: bảng so sánh 5 phương pháp đầy đủ trên synthetic
 - [ ] S′: kết quả `T_theta` trên dữ liệu thật + hình domain-gap so sánh với `T_phi`
