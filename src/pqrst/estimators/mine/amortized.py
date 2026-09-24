@@ -75,10 +75,42 @@ class MaskedStatisticsNetwork(nn.Module):
     ) -> torch.Tensor:
         # Zero-out x_lag where mask is 0
         x_lag_masked = x_lag * mask
-        
+
         xy = torch.cat([y_t, x_lag_masked, y_lag, mask], dim=-1)
         out = self.net(xy)
         return out.squeeze(-1)
+
+    def forward_blocks(
+        self,
+        y_t: torch.Tensor,
+        x_lag: torch.Tensor,
+        y_lag: torch.Tensor,
+        mask: torch.Tensor,
+    ) -> dict[str, torch.Tensor]:
+        """Nhu forward(), nhung tra ve activation SAU MOI khoi Linear+ELU (bo qua
+        Linear cuoi, khong co ELU sau) - dung cho phan tich PCA-theo-khoi (Pha T.3b,
+        xem notebooks/phase_t_04_pca_feature_analysis.ipynb). Duoc rut ra thanh
+        method chinh thuc (thay vi ham rieng trong notebook) de tai dung nguyen xi
+        cho T_theta o Nhip 2 (docs/NHIP2_GUIDE.md muc 2.2) qua
+        src/pqrst/evaluation/feature_space.py - module do goi method nay theo kieu
+        duck-typing, khong biet gi ve cau truc MLP ben trong.
+
+        Tra ve dict {'block0_input':..., 'block1':..., ..., f'block{n}':...} voi n
+        = so lop An (Linear+ELU) trong self.net.
+        """
+        x_lag_masked = x_lag * mask
+        h = torch.cat([y_t, x_lag_masked, y_lag, mask], dim=-1)
+        blocks = {"block0_input": h}
+        layers = list(self.net)
+        block_idx = 1
+        i = 0
+        while i < len(layers) - 1:  # bo qua Linear cuoi (khong co ELU sau)
+            h = layers[i](h)      # Linear
+            h = layers[i + 1](h)  # ELU
+            blocks[f"block{block_idx}"] = h
+            block_idx += 1
+            i += 2
+        return blocks
 
 
 @dataclass

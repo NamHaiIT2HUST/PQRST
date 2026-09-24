@@ -89,3 +89,23 @@ class FourierFeatureStatisticsNetwork(nn.Module):
 
         out = self.readout(feats)
         return out.squeeze(-1)
+
+    def forward_blocks(
+        self,
+        y_t: torch.Tensor,
+        x_lag: torch.Tensor,
+        y_lag: torch.Tensor,
+        mask: torch.Tensor,
+    ) -> dict[str, torch.Tensor]:
+        """Nhu forward(), tra ve activation theo khoi - dung interface voi
+        MaskedStatisticsNetwork.forward_blocks() de cung dung duoc voi
+        src/pqrst/evaluation/feature_space.py (Pha T.3b/Nhip 2 muc 2.2). Model nay
+        chi co 1 khoi an (dac trung Fourier) truoc lop doc ra, nen dict chi co 2
+        khoa: 'block0_input' (4-dim goc) va 'block1' (dac trung Fourier)."""
+        x_lag_masked = x_lag * mask
+        xy = torch.cat([y_t, x_lag_masked, y_lag, mask], dim=-1)
+        z = xy @ self.encode_w.T + self.encode_b
+        angles = z.unsqueeze(-1) * self.harmonics.view(1, 1, -1)
+        feats = torch.cat([torch.sin(angles), torch.cos(angles)], dim=-1)
+        feats = feats.reshape(feats.shape[0], -1)
+        return {"block0_input": xy, "block1": feats}

@@ -129,16 +129,20 @@ Fourier nhiều chiều" — chưa loại trừ được khả năng đơn giả
 thể thử quét `n_directions` lớn hơn (vd 10-20) xem MSE có tiến gần Amortized
 không — đây là việc rẻ, làm thêm được nếu muốn chắc chắn hơn, không bắt buộc.
 
-### 2.2. Hình thức hoá công cụ chẩn đoán PCA-theo-khối thành module tái dùng
+### 2.2. Hình thức hoá công cụ chẩn đoán PCA-theo-khối thành module tái dùng — ĐÃ XONG
 
-Hiện `notebooks/phase_t_04_pca_feature_analysis.ipynb` là code notebook, viết
-riêng cho `MaskedStatisticsNetwork`. Trước khi có thêm 1 kiến trúc mới
-(`T_theta`), nên rút thành hàm chung trong
-`src/pqrst/evaluation/feature_space.py`:
-`extract_block_activations(model, ...)`, `pca_by_label(...)`, `project_ood(...)`
-— nhận vào bất kỳ model có cấu trúc "chuỗi khối" (hoặc 1 hàm `forward_blocks`)
-để dùng LẠI ĐƯỢC nguyên xi cho `T_theta` ở Pha R′/S′, không viết lại từ đầu.
-Đây cũng là lúc thêm test cho module này (hiện chưa có test cho phần PCA).
+Đã rút thành `src/pqrst/evaluation/feature_space.py`: `windows_to_tensors()`,
+`collect_block_records()`, `fit_pca()`, `project_pca()` — model-agnostic qua
+duck-typing (bất kỳ model có method `forward_blocks(y_t,x_lag,y_lag,mask) ->
+dict[str, Tensor]` đều dùng được). Đã thêm `forward_blocks()` vào cả
+`MaskedStatisticsNetwork` (amortized.py) và `FourierFeatureStatisticsNetwork`
+(classical_fourier.py) — khi có `T_theta` ở Pha Q′/R′/S′, chỉ cần thêm đúng 1
+method `forward_blocks()` tương tự vào class mạch lượng tử, KHÔNG cần sửa gì ở
+`feature_space.py`.
+
+8 test (`tests/test_feature_space.py`) + đã đối chiếu số **khớp 100%** với hàm
+gốc trong `phase_t_04_pca_feature_analysis.ipynb` (không viết lại notebook đó -
+kết quả 3 hình đã báo cáo ở Pha T.3b vẫn đúng, không cần chạy lại).
 
 ### 2.3. Chuẩn bị môi trường
 
@@ -240,7 +244,10 @@ kết quả là có hoặc không), mã nguồn tái lập được từ đầu 
 ## 8. Checklist thoát Nhịp 2
 
 - [x] P′.0a: ablation Fourier cổ điển có kết luận rõ (Fourier_classical thua cả KSG và Amortized ở mọi N, 2 loại dữ liệu — ủng hộ hướng cần lượng tử thật, xem mục 2.1)
-- [ ] P′.0b: hình thức hoá công cụ PCA-theo-khối thành module tái dùng (có test) — chưa làm
+- [x] P′.0b: hình thức hoá công cụ PCA-theo-khối thành `src/pqrst/evaluation/feature_space.py`
+      (model-agnostic qua `forward_blocks()`, đã thêm cho cả `MaskedStatisticsNetwork` và
+      `FourierFeatureStatisticsNetwork`, 8 test, đã đối chiếu khớp 100% với hàm gốc trong
+      `phase_t_04_pca_feature_analysis.ipynb`)
 - [ ] P′: `T_theta` chạy được, gradient hợp lệ
 - [ ] Q′: loss hội tụ trên cấu hình đơn giản, không barren plateau (hoặc đã kích hoạt cổng dự phòng)
 - [ ] R′: bảng so sánh 5 phương pháp đầy đủ trên synthetic
