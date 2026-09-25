@@ -251,6 +251,28 @@ Kiểm tra chéo nghi vấn "variance quantum bị thổi phồng do `eval_n_shu
 - Bất lợi/thuận lợi lẫn lộn: T_theta chỉ train trên ĐÚNG cấu hình test (thuận lợi cho nó) nhưng chỉ 128 cửa sổ (bất lợi: overfit train -0.20 vs val -0.14 — nguồn variance hợp lý), còn MLP train 27.000 cửa sổ nhiều cấu hình.
 - Kết luận Q′→R′: mạch lượng tử **học được thật và có bias thấp**, nhưng chưa có bằng chứng thắng cổ điển. Hướng thử tiếp hợp lý (rẻ nhất): tăng số cửa sổ train (giảm variance/overfit) và/hoặc calibration bias không cần thiết cho quantum (bias đã thấp) — nếu variance giảm xuống ~MLP, quantum sẽ thắng MSE nhờ bias thấp.
 
+**Lần chạy 4 — 450 cửa sổ train (`phase_p2_04_...`, ~84 phút) + phân rã TE (kiểm tra bằng script riêng):**
+
+| | mean | bias | variance | MSE |
+|---|---|---|---|---|
+| Quantum-128 (20 shuffle) | 0.147 | -0.034 | 0.0124 | 0.0135 |
+| **Quantum-450** | 0.152 | -0.029 | 0.0145 | 0.0152 |
+| MLP | 0.110 | -0.072 | 0.0049 | 0.0100 |
+
+- Overfit hết (train≈val≈-0.20, DV bound 0.14→0.20) **nhưng variance của TE không giảm** → giả thuyết "thiếu dữ liệu" **bị bác bỏ**; variance cao là do kiến trúc.
+- **Phân rã `TE = mi_full − mi_reduced`** (100 cửa sổ, 20 shuffle; TE thật 0.181 = mi_full 0.438 − mi_reduced 0.256):
+
+| | mi_full (mean / var) | mi_reduced (mean / var) | corr(full, red) | var(TE) |
+|---|---|---|---|---|
+| MLP | 0.271 / 0.0215 | 0.162 / 0.0117 | **0.892** | 0.0049 |
+| Quantum-450 | 0.273 / **0.0322** | 0.121 / 0.0108 | 0.765 | 0.0145 |
+
+  - MLP triệt tiêu ~85% variance của 2 số hạng nhờ tương quan cao (dùng chung mạng + mask); quantum chỉ ~66%.
+  - Nếu quantum có tương quan 0.892 (giữ nguyên variance từng số hạng) thì var(TE) ≈ 0.0096 — chỉ giải thích ~1/3 khoảng cách; phần còn lại là **`mi_full` của quantum nhiễu hơn ~1.5×**.
+  - **Cảnh báo giải thích:** bias TE "thấp nhất" của quantum KHÔNG phải ước lượng thành phần tốt hơn: `mi_full` giống MLP (0.27, thấp hơn thật 0.44), còn `mi_reduced` quantum còn **thấp hơn** MLP (0.121 vs 0.162, thật 0.256). TE ít bias hơn vì `mi_reduced` bị đánh thấp nhiều hơn (sai số triệt tiêu nhau) — không nên trình bày là "quantum chính xác hơn về bias".
+
+**Kết luận Q′ (chốt):** `T_theta` học được thật (loss, gradient, PCA theo `c`) nhưng **KHÔNG thắng cổ điển ở N=20**: MSE 0.0135–0.0152 ≈ KSG (0.0132), thua MLP (0.0100); tăng dữ liệu không cải thiện. Hai nguyên nhân đã đo: (1) mask/hai nhánh full-reduced ít tương quan hơn MLP, (2) `mi_full` nhiễu hơn. Hướng cải thiện chưa thử (suy đoán, không bảo đảm): đưa mask vào NHIỀU qubit / tham số hoá mask kỹ hơn để 2 nhánh tương quan cao; tăng số qubit/lớp cho `mi_full`. Nếu không muốn đầu tư thêm: ghi nhận đây là kết quả trung thực cho bản thảo (quantum học được, không thắng ở quy mô mô phỏng khả thi).
+
 **(Kết luận cũ, lần 1, giữ lại để tham chiếu):** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
 sụp đổ), nhưng **chưa đủ để đi tiếp R′**. Bước kế: train dài hơn (loss chưa chững)
 và/hoặc tăng learning rate (đang 0.001, mô phỏng lượng tử ít bước nên có thể cần
