@@ -235,6 +235,22 @@ train, N=20, c=0.6, 12 epoch, ~34 phút):**
 
 **Kết luận Q′ (cập nhật):** ĐẠT (loss hội tụ, gradient sống, không sụp đổ, PCA có cấu trúc). Bước kế = đo TE thật so với KSG/MLP trên tập test độc lập (notebook 03), rồi mới quyết mở rộng R′.
 
+**Lần chạy 3 — đo TE thật (`phase_p2_03_...`, 100 cửa sổ test độc lập, c=0.6, N=20, TE thật 0.1814):**
+
+| | mean | bias | variance | MSE |
+|---|---|---|---|---|
+| KSG | 0.099 | -0.083 | 0.0063 | 0.0132 |
+| MLP (T_phi, Pha R) | 0.110 | -0.072 | 0.0049 | **0.0100** |
+| Quantum (T_theta, 128 cửa sổ train) | 0.146 | **-0.035** | 0.0141 | 0.0152 |
+
+Kiểm tra chéo nghi vấn "variance quantum bị thổi phồng do `eval_n_shuffles`=5 (MLP dùng 20)": đánh giá lại đúng checkpoint với 20 lần xáo trộn → std 0.1189→0.1115, MSE 0.0152→**0.0135**. Variance chỉ giảm nhẹ nên phần lớn variance là **của chính mô hình**, không phải nhiễu đo.
+
+**Đọc kết quả (trung thực):**
+- Quantum có **bias nhỏ nhất** (~½ MLP/KSG) — ước lượng trung bình gần TE thật nhất.
+- Nhưng **variance gấp ~2.5×** → MSE (0.0135) ≈ KSG (0.0132), **vẫn thua MLP (0.0100)**. KHÔNG thắng ở N=20.
+- Bất lợi/thuận lợi lẫn lộn: T_theta chỉ train trên ĐÚNG cấu hình test (thuận lợi cho nó) nhưng chỉ 128 cửa sổ (bất lợi: overfit train -0.20 vs val -0.14 — nguồn variance hợp lý), còn MLP train 27.000 cửa sổ nhiều cấu hình.
+- Kết luận Q′→R′: mạch lượng tử **học được thật và có bias thấp**, nhưng chưa có bằng chứng thắng cổ điển. Hướng thử tiếp hợp lý (rẻ nhất): tăng số cửa sổ train (giảm variance/overfit) và/hoặc calibration bias không cần thiết cho quantum (bias đã thấp) — nếu variance giảm xuống ~MLP, quantum sẽ thắng MSE nhờ bias thấp.
+
 **(Kết luận cũ, lần 1, giữ lại để tham chiếu):** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
 sụp đổ), nhưng **chưa đủ để đi tiếp R′**. Bước kế: train dài hơn (loss chưa chững)
 và/hoặc tăng learning rate (đang 0.001, mô phỏng lượng tử ít bước nên có thể cần
