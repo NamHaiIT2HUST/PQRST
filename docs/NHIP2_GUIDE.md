@@ -273,6 +273,26 @@ Kiểm tra chéo nghi vấn "variance quantum bị thổi phồng do `eval_n_shu
 
 **Kết luận Q′ (chốt):** `T_theta` học được thật (loss, gradient, PCA theo `c`) nhưng **KHÔNG thắng cổ điển ở N=20**: MSE 0.0135–0.0152 ≈ KSG (0.0132), thua MLP (0.0100); tăng dữ liệu không cải thiện. Hai nguyên nhân đã đo: (1) mask/hai nhánh full-reduced ít tương quan hơn MLP, (2) `mi_full` nhiễu hơn. Hướng cải thiện chưa thử (suy đoán, không bảo đảm): đưa mask vào NHIỀU qubit / tham số hoá mask kỹ hơn để 2 nhánh tương quan cao; tăng số qubit/lớp cho `mi_full`. Nếu không muốn đầu tư thêm: ghi nhận đây là kết quả trung thực cho bản thảo (quantum học được, không thắng ở quy mô mô phỏng khả thi).
 
+**Lần chạy 5 — mask conditioning (`phase_p2_05_...`, thí nghiệm sạch: chỉ đổi 1 biến so với lần 3, 128 cửa sổ, lr 0.03, 20 epoch, ~64 phút):**
+
+| | bias | variance | MSE | corr(full,red) | var(TE) |
+|---|---|---|---|---|---|
+| KSG | -0.083 | 0.0063 | 0.0132 | — | — |
+| MLP | -0.072 | 0.0049 | **0.0100** | 0.892 | 0.0049 |
+| Quantum-128 (không mask cond) | -0.034 | 0.0124 | 0.0135 | 0.765* | ~0.0125 |
+| **Quantum-128 + mask cond** | -0.033 | 0.0115 | **0.0125** | 0.794 | 0.0116 |
+
+(*đo ở bản 450 cửa sổ.) Cải thiện **có hướng đúng nhưng nhỏ**: tương quan hai nhánh 0.765→0.794, variance TE giảm ~7-20%, MSE 0.0135→0.0125 (nhỉnh hơn KSG 0.0132, vẫn thua MLP 0.0100). `mi_full` vẫn nhiễu hơn MLP (var 0.0288 vs 0.0215). **Chưa kiểm định ý nghĩa thống kê** (n=100 cửa sổ, 1 seed, 1 cấu hình) — chênh lệch MSE 0.0125 vs 0.0132/0.0135 nhiều khả năng nằm trong nhiễu; chỉ chênh với MLP (0.0100) là rõ.
+
+**KẾT LUẬN CHỐT Nhịp 2 ở quy mô mô phỏng khả thi (N=20, c=0.6, 1 cấu hình):**
+1. `T_theta` (6 qubit, 4 lớp, 61–85 tham số) **học được thật**: loss hội tụ, gradient sống, PCA tách theo `c` dù chỉ train trên c=0.6.
+2. **KHÔNG thắng MLP** (MSE 0.0125–0.0152 vs 0.0100); ngang KSG. Tăng dữ liệu (128→450) không giúp; chỉnh mask giúp nhẹ.
+3. Nguyên nhân đã đo: variance TE cao do (a) hai nhánh full/reduced ít tương quan hơn MLP, (b) `mi_full` nhiễu hơn ~1.3-1.5×. Cả hai ước lượng thành phần đều **đánh thấp** so với thật (mi_full 0.27 vs 0.44) — như MLP.
+4. Bias TE thấp của quantum một phần là triệt tiêu sai số (mi_reduced bị đánh thấp nhiều hơn), KHÔNG phải ước lượng thành phần chính xác hơn.
+5. Giới hạn thực tế: mô phỏng CPU ~44-85 phút cho 128 cửa sổ N=20 → không thể mở rộng lên quy mô Pha R (27.000 cửa sổ, N tới 200); mọi so sánh ở trên là quy mô nhỏ, 1 cấu hình, thiên vị có lợi cho quantum (train đúng cấu hình test) — vậy mà vẫn không thắng MLP.
+
+**Hàm ý cho bản thảo:** kết quả Nhịp 2 là **kết quả âm/trung tính có đóng góp**: (i) bài học toán học về tách rời cộng tính (Jensen) áp dụng cho cả Fourier cổ điển lẫn mạch lượng tử; (ii) ablation dequantization; (iii) chẩn đoán PCA + phân rã TE cho thấy CƠ CHẾ vì sao quantum chưa thắng (tương quan hai nhánh, nhiễu mi_full). Không nên tuyên bố "quantum advantage".
+
 **(Kết luận cũ, lần 1, giữ lại để tham chiếu):** đạt điều kiện thoát tối thiểu (loss giảm, gradient sống, không
 sụp đổ), nhưng **chưa đủ để đi tiếp R′**. Bước kế: train dài hơn (loss chưa chững)
 và/hoặc tăng learning rate (đang 0.001, mô phỏng lượng tử ít bước nên có thể cần
