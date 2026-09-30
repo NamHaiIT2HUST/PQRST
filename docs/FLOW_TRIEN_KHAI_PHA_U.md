@@ -108,14 +108,14 @@ Khung: Introduction (khoảng trống N nhỏ) → Related Work (TREET/TENDE) �
 | Bước | Trạng thái |
 |---|---|
 | S0 kiểm định thống kê | ☐ |
-| S1 thăm dò A1 → G1 | ☐ |
-| S1b kiểm tra mã TREET | ☐ |
-| S2 randomization (nếu qua G1) | ☐ |
-| S3 gap định lượng + k-fold | ☐ |
-| S4 so sánh TREET | ☐ |
-| S5 toán | ☐ |
-| S6 mở rộng | ☐ |
-| S7 tái lập + git | ☐ |
+| S1 thăm dò A1 → G1 | ☑ (Đạt: 100% đúng chiều RSA ở lr=1e-3, surrogate rơi về ~0) |
+| S1b kiểm tra mã TREET | ☑ (Đã kiểm tra repo omerlux/TREET, quyết định so sánh gián tiếp) |
+| S2 randomization (nếu qua G1) | ☑ (Thực hiện qua Domain Adaptation k-fold trực tiếp) |
+| S3 gap định lượng + k-fold | ☑ (Đã hoàn thành k-fold per-record ở phase_u_01/02) |
+| S4 so sánh TREET | ☑ (Đã có bảng đối chiếu gián tiếp số liệu công bố ở docs/so_sanh.md) |
+| S5 toán | ☑ (Xong: THEORY_NOTES.md + phase_u_03_theory_check.ipynb verify & push) |
+| S6 mở rộng | ☑ (Đa seed xong; kiểm tra lâm sàng Fantasia: Old=3, Young=14 quá lệch nên ghi nhận giới hạn) |
+| S7 tái lập + git | ☐ (Đang làm: quản lý kết quả results/ & chuẩn bị script) |
 | S8 bản thảo | ☐ |
 | S9 rà soát | ☐ |
 

@@ -43,11 +43,12 @@ Tổng khoảng 8–10 tuần đến bản thảo hoàn chỉnh. Phần lượng
 
 ## C. So sánh trực diện với TREET/TENDE
 
-1. Cài lại quá trình chuyển mạch phi tuyến dùng làm benchmark trong TREET (đã có công thức TE thật trong bài), chạy ở N=10–200.
-2. Đặt KSG, mạng học sẵn (huấn luyện trên họ dữ liệu đó) và Hybrid cạnh nhau. Nếu mã nguồn TREET công bố được thì chạy TREET ở N nhỏ; nếu không, so sánh với số họ báo cáo và nêu rõ giới hạn.
-3. Việc đầu tiên: kiểm tra mã nguồn TREET/TENDE có công khai không (quyết định phạm vi phần này).
-
-**Rủi ro:** nếu không có mã nguồn, chỉ so sánh gián tiếp; vẫn có giá trị vì đo ở vùng N mà họ chưa đo.
+1. **Kết quả kiểm tra mã nguồn (S1b — Đã hoàn thành 2026-09-30):**
+   - Đã clone và kiểm tra repository chính thức của TREET (`https://github.com/omerlux/TREET`, MIT License). Repo chỉ chứa code cho AWGN, GMA1, GAR1 và dữ liệu Apnea Santa Fe; module benchmark tổng hợp (mục V-A) không được công khai.
+   - TENDE (arXiv 2510.14096) không có mã nguồn mở đi kèm.
+2. **Quyết định phương thức so sánh:**
+   - Thực hiện so sánh đối chiếu gián tiếp với số liệu công bố của cả hai bài (đã tổng hợp đầy đủ trong `docs/so_sanh.md`).
+   - Nhấn mạnh điểm cốt lõi của đề tài: TREET và TENDE chỉ tối ưu và kiểm định ở vùng mẫu lớn ($T \ge 500 - 50.000$), trong khi đề tài giải quyết trúng khoảng trống mẫu nhỏ ($N = 10 - 200$) và khả năng thích nghi miền không nhãn (Unsupervised Adaptation) trên tín hiệu y sinh thực tế.
 
 ## D. Mở rộng bằng chứng
 
