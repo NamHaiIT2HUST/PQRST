@@ -18,7 +18,7 @@
 > [`MENTOR_REPORT.md`](MENTOR_REPORT.md). Bản trả lời rời từng câu hỏi cụ thể
 > (nếu cần đối chiếu nhanh): [`MENTOR_FEEDBACK_RESPONSE.md`](MENTOR_FEEDBACK_RESPONSE.md).
 
-**Cập nhật lần cuối:** 2026-09-15.
+**Cập nhật lần cuối:** 2026-09-25.
 
 ---
 
@@ -533,23 +533,38 @@ sau hiệu chỉnh bias trên synthetic) là "kết quả có câu chuyện, nga
 phân loại roadmap gốc → **vẫn đáng sang Nhịp 2**, hạ kỳ vọng phần câu chuyện phi
 tuyến.
 
-### 7.2. Nhịp 2 (P′→T′, lượng tử) — CHƯA BẮT ĐẦU
+### 7.2. Nhịp 2 (P′→Q′, lượng tử) — ĐÃ THỬ, KẾT LUẬN: HỌC ĐƯỢC NHƯNG KHÔNG THẮNG CỔ ĐIỂN
 
-> Kế hoạch chi tiết đầy đủ: [`NHIP2_GUIDE.md`](NHIP2_GUIDE.md). Chưa có dòng
-> code nào. Tái dùng nguyên `src/pqrst/data/`, `data/processed/`, pipeline
-> đánh giá — chỉ viết `src/pqrst/estimators/quantum/wrapper.py`
-> (`T_theta(x,y)->scalar`, cùng chữ ký `T_phi`) rồi cắm vào `train.py` đã có.
+> Chi tiết + số liệu đầy đủ: [`NHIP2_GUIDE.md`](NHIP2_GUIDE.md). Code: `src/pqrst/estimators/quantum/`
+> (`circuit.py`, `wrapper.py`), `classical_fourier.py`, `evaluation/feature_space.py`.
+> Notebook: `phase_p2_00..05_*.ipynb`. 113 test pass.
 
-**Lý do đầu tư lượng tử đã ĐỔI** so với bản roadmap gốc: giả thuyết cũ "ít tham
-số giúp N nhỏ" đã bị chính ablation mạng nhỏ ở Pha R bác bỏ (mạng `[16,16]`
-không thắng rõ). `NHIP2_GUIDE.md` mục 1 đề xuất lý do mới, cụ thể hơn (dựa trên
-Schuld/Sweke/Meyer 2021 — mạch data re-uploading tương đương chuỗi Fourier
-riêng phần, khác lớp hàm với MLP, không chỉ khác số tham số), và thêm 1 bước
-**P′.0** (ablation Fourier cổ điển + hình thức hoá công cụ PCA từ T.3b) TRƯỚC
-khi viết mạch lượng tử thật, để kiểm định giả thuyết rẻ trước khi đầu tư đắt.
+**Đã làm (P′.0 → Q′):**
+- **P′.0a — ablation "dequantization" cổ điển:** mô hình Fourier features 41 tham số **thua** cả KSG
+  và MLP ở mọi N, cả 2 loại dữ liệu. Trên đường làm phát hiện + sửa 1 lỗi thiết kế THẬT: encode riêng
+  từng chiều khiến `T` tách rời cộng tính, và theo bất đẳng thức Jensen thì giá trị tối ưu của DV bound
+  luôn = 0 (không cách train nào sửa được).
+- **P′.0b:** công cụ PCA-theo-khối tổng quát hoá (`feature_space.py`, có test).
+- **P′:** mạch data re-uploading 6 qubit/4 lớp (PennyLane), có test riêng chống lỗi tách rời cộng tính.
+- **Q′:** train + đo TE thật trên 1 cấu hình (N=20, c=0.6, TE thật 0.181), 100 cửa sổ test độc lập:
 
-Có cổng dự phòng: ≥2 cấu hình không hội tụ (nghi barren plateau) → có thể dừng
-Nhịp 2, dùng Nhịp 1 làm bản thảo hoàn chỉnh — không phải rủi ro chí mạng.
+| | bias | variance | MSE |
+|---|---|---|---|
+| KSG | -0.083 | 0.0063 | 0.0132 |
+| MLP (T_phi) | -0.072 | 0.0049 | **0.0100** |
+| Quantum (128 cửa sổ) | -0.034 | 0.0124 | 0.0135 |
+| Quantum (450 cửa sổ) | -0.029 | 0.0145 | 0.0152 |
+| Quantum + mask conditioning | -0.033 | 0.0115 | 0.0125 |
+
+**Kết luận:** `T_theta` **học được thật** (loss hội tụ, gradient sống, PCA tách theo `c` dù chỉ train trên
+c=0.6) nhưng **không thắng MLP**; ngang KSG. Tăng dữ liệu không giúp; chỉnh mask giúp nhẹ (chưa kiểm định
+thống kê). Nguyên nhân đã đo bằng phân rã TE=mi_full−mi_reduced: hai nhánh ít tương quan hơn MLP (0.79 vs
+0.89) và `mi_full` nhiễu hơn. Bias TE thấp của quantum một phần là triệt tiêu sai số, không phải chính xác
+hơn. Mô phỏng CPU (~1–1,5 giờ/lần) chặn việc mở rộng lên quy mô Pha R.
+
+**Quyết định:** dừng đầu tư thêm vào lượng tử, **bỏ Pha S′** (không có lợi thế nào để kiểm chứng trên dữ liệu
+thật khi cổ điển đã fail vì domain gap). Nhịp 2 đóng vai trò **kết quả bổ sung trung thực** (kết quả âm có
+đóng góp), KHÔNG tuyên bố quantum advantage.
 
 ---
 
@@ -558,7 +573,7 @@ Nhịp 2, dùng Nhịp 1 làm bản thảo hoàn chỉnh — không phải rủi
 | Mục tiêu | Còn lại | Ước tính |
 |---|---|---|
 | Nộp Q1/Q2 chỉ dựa trên Nhịp 1 | Code đã xong 100% — chỉ còn viết bản thảo (T.6) + review (T.7) | Gần cán đích |
-| Làm đủ cả 2 Nhịp (đúng scope gốc) | Toàn bộ Nhịp 2 (P′-T′) — 1 chu kỳ đầy đủ, tái dùng hạ tầng nên rẻ hơn xây từ đầu | Còn khá nhiều (~2-3 tháng theo ước tính gốc roadmap) |
+| Nhịp 2 (lượng tử) | Đã thử đến Q′, kết luận chốt (học được, không thắng); R′/S′/T′ đầy đủ KHÔNG khả thi vì mô phỏng CPU chậm | Dừng — viết như kết quả bổ sung |
 
 ---
 

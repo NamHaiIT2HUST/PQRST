@@ -1,0 +1,6 @@
+Pha,Tieu chi,Ket qua
+P,Baseline bias thap tren du lieu co ground-truth,DAT (KSG bias<=0.03 nat moi config)
+Q,Sai so MI < 20%,"DAT (7.6%, hoac 2.86% neu trung binh post-convergence)"
+R,Thang KSG+Symbolic o >=70% o N<30,"CHUA DAT (9/30) - nhung thang ro tu N>=30, diem giao cat on dinh qua 3 kiem dinh"
+S,Sanity check TE dat tren >=1 bo du lieu that,"DAT (KSG, Fantasia+Apnea-ECG gop N=23, CI hoan toan duong)"
+T.1,Tong hop ket qua chinh + xac nhan lai so real-data,DAT (xem muc 3 tren)

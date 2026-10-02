@@ -1,0 +1,5 @@
+kind,seed,mean_diff,sd_diff,frac_correct_dir,spearman_vs_KSG
+real,0,0.0477,0.0232,1.0,-0.0172
+real,1,0.0556,0.0305,1.0,0.3333
+real,2,0.0617,0.0221,1.0,0.1348
+surrogate,0,-0.0027,0.0029,0.1765,-0.1667

@@ -124,3 +124,32 @@ def test_windows_to_tensors_compatible_input():
     out = model(ty_t, tx_lag, ty_lag, mask)
     assert out.shape == (7,)
     assert torch.isfinite(out).all()
+
+
+def test_mask_conditioning_params_and_gradient():
+    model = QuantumStatisticsNetwork(n_qubits=6, n_layers=4, mask_conditioning=True)
+    n_params = sum(p.numel() for p in model.parameters())
+    assert n_params == 61 + 4 * 6  # them mask_theta (n_layers*n_qubits)
+    y_t, x_lag, y_lag, mask = _make_batch(0, n=6)
+    out = model(y_t, x_lag, y_lag, mask)
+    assert torch.isfinite(out).all()
+    out.sum().backward()
+    assert model.mask_theta.grad is not None
+    assert torch.isfinite(model.mask_theta.grad).all()
+
+
+def test_mask_conditioning_changes_output_when_mask_theta_nonzero():
+    torch.manual_seed(0)
+    model = QuantumStatisticsNetwork(n_qubits=6, n_layers=3, mask_conditioning=True)
+    y_t, x_lag, y_lag, _ = _make_batch(0, n=5)
+    ones = torch.ones(5, 1)
+    with torch.no_grad():
+        base = model(y_t, x_lag, y_lag, ones).clone()
+        model.mask_theta.copy_(torch.randn_like(model.mask_theta))
+        changed = model(y_t, x_lag, y_lag, ones)
+        zeros_out = model(y_t, x_lag, y_lag, torch.zeros(5, 1))
+        model.mask_theta.zero_()
+        zeros_ref = model(y_t, x_lag, y_lag, torch.zeros(5, 1))
+    assert not torch.allclose(base, changed)
+    # mask=0 -> RZ(0*theta)=id -> khong phu thuoc mask_theta
+    assert torch.allclose(zeros_out, zeros_ref, atol=1e-6)

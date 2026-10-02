@@ -102,3 +102,30 @@ vào, và **chủ động phát hiện, lý giải tận gốc một trường h
 (domain generalization gap) thay vì chỉ báo cáo kết quả tốt. Em cho rằng đây là
 một hướng đóng góp bổ sung cho, chứ không cạnh tranh trực tiếp với, 2 bài trên —
 và sẽ trích dẫn/định vị rõ trong phần Related Work của bản thảo.
+
+## 6. Kết quả thử nghiệm phần lượng tử (Nhịp 2)
+
+Em đã thử thay mạng nơ-ron cổ điển bằng một mạch lượng tử nhỏ (6 qubit, 4 lớp, mô phỏng trên máy tính thường)
+làm "statistics network" cho ước lượng TE. Trước đó em làm một thí nghiệm đối chứng cổ điển (mô hình Fourier
+ít tham số) để chắc rằng nếu có cải thiện thì không chỉ do "dạng hàm" — mô hình đó thua cả KSG và MLP.
+Trong quá trình này em cũng phát hiện và chứng minh bằng toán một lỗi thiết kế (hàm thống kê tách rời cộng
+tính thì chặn dưới Donsker–Varadhan luôn ≤ 0), và đã áp dụng bài học này ngay khi thiết kế mạch lượng tử.
+
+Kết quả trên cấu hình N=20, cường độ ghép nối 0.6 (TE thật = 0.181 nats), 100 cửa sổ kiểm tra độc lập:
+
+| | Độ lệch | Phương sai | MSE |
+|---|---|---|---|
+| KSG | -0.083 | 0.0063 | 0.0132 |
+| Mạng học sẵn cổ điển (MLP) | -0.072 | 0.0049 | **0.0100** |
+| Mạch lượng tử | -0.033 | 0.0115 | 0.0125 |
+
+Mạch lượng tử **học được thật** (loss hội tụ, gradient ổn định, đặc trưng tách theo cường độ ghép nối dù chỉ
+huấn luyện trên một mức) nhưng **chưa thắng mạng cổ điển**: phương sai cao hơn. Em đã phân rã TE thành hai
+thành phần để tìm nguyên nhân: hai nhánh tính toán của mạch lượng tử ít tương quan hơn mạng cổ điển (0.79 so
+với 0.89) và một thành phần nhiễu hơn. Tăng dữ liệu huấn luyện gấp ~3.5 lần không cải thiện; điều chỉnh cách
+đưa thông tin nhánh vào mạch cải thiện nhẹ. Em cũng lưu ý độ lệch thấp của mạch lượng tử một phần là do hai sai
+số triệt tiêu nhau, nên không nên diễn giải là ước lượng chính xác hơn. Do mô phỏng lượng tử trên CPU rất chậm
+(khoảng 1–1,5 giờ cho một lần huấn luyện nhỏ), em không thể mở rộng lên quy mô như phần cổ điển.
+
+Em xin đề xuất **không tuyên bố ưu thế lượng tử**, trình bày phần này như kết quả bổ sung trung thực, và dừng
+đầu tư thêm vào lượng tử để dành thời gian viết bản thảo phần chính.

@@ -35,7 +35,8 @@ import pennylane as qml
 import torch
 
 
-def make_circuit(n_qubits: int, n_layers: int, device_name: str = "lightning.qubit"):
+def make_circuit(n_qubits: int, n_layers: int, device_name: str = "lightning.qubit",
+                 mask_conditioning: bool = False):
     """Tra ve 1 QNode(inputs, theta) -> list[Tensor] (n_qubits phan tu, moi phan tu
     shape (batch,)) = <PauliZ> tung qubit sau n_layers lop data re-uploading.
 
@@ -45,6 +46,12 @@ def make_circuit(n_qubits: int, n_layers: int, device_name: str = "lightning.qub
         device_name: ten device PennyLane ("lightning.qubit" nhanh hon
             "default.qubit" tren CPU cho mach nho nay).
 
+    mask_conditioning: neu True, QNode nhan them (mask, mask_theta) va sau moi lop
+        ap RZ(mask_theta[l,q]*mask) len MOI qubit - dua "che do full/reduced" vao
+        toan mach thay vi chi 1 qubit (Pha Q', xem docs/NHIP2_GUIDE.md muc 4: 2 nhanh
+        cua T_theta it tuong quan hon MLP -> variance TE cao). Mac dinh False = hanh
+        vi cu.
+
     inputs: Tensor shape (batch, n_qubits) - GOC quay ma hoa da nhan san voi
         encode_scale (xem wrapper.py) - ham nay KHONG tu nhan scale.
     theta: Tensor shape (n_layers, n_qubits, 2) - tham so hoc duoc (RY, RZ moi qubit
@@ -53,13 +60,17 @@ def make_circuit(n_qubits: int, n_layers: int, device_name: str = "lightning.qub
     dev = qml.device(device_name, wires=n_qubits)
 
     @qml.qnode(dev, interface="torch", diff_method="adjoint")
-    def circuit(inputs: torch.Tensor, theta: torch.Tensor):
+    def circuit(inputs: torch.Tensor, theta: torch.Tensor,
+                mask: torch.Tensor | None = None, mask_theta: torch.Tensor | None = None):
         for l in range(n_layers):
             for q in range(n_qubits):
                 qml.RY(inputs[:, q], wires=q)
             for q in range(n_qubits):
                 qml.RY(theta[l, q, 0], wires=q)
                 qml.RZ(theta[l, q, 1], wires=q)
+            if mask_conditioning:
+                for q in range(n_qubits):
+                    qml.RZ(mask * mask_theta[l, q], wires=q)
             for q in range(n_qubits):
                 qml.CNOT(wires=[q, (q + 1) % n_qubits])
         return [qml.expval(qml.PauliZ(q)) for q in range(n_qubits)]

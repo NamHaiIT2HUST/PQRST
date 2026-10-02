@@ -22,10 +22,12 @@ class QuantumStatisticsNetwork(nn.Module):
     (n_qubits+1). Vi du n_qubits=6, n_layers=4: 6 + 48 + 7 = 61 tham so.
     """
 
-    def __init__(self, n_qubits: int = 6, n_layers: int = 4, device_name: str = "lightning.qubit"):
+    def __init__(self, n_qubits: int = 6, n_layers: int = 4, device_name: str = "lightning.qubit",
+                 mask_conditioning: bool = False):
         super().__init__()
         self.n_qubits = n_qubits
         self.n_layers = n_layers
+        self.mask_conditioning = mask_conditioning
 
         # Gan CO DINH (khong hoc) tung qubit cho 1 trong 4 dac trung dau vao
         # (y_t=0, x_lag_masked=1, y_lag=2, mask=3), lap vong tron neu n_qubits>4 -
@@ -38,7 +40,16 @@ class QuantumStatisticsNetwork(nn.Module):
         self.theta = nn.Parameter(torch.randn(n_layers, n_qubits, 2) * 0.1)
         self.readout = nn.Linear(n_qubits, 1)
 
-        self.circuit = make_circuit(n_qubits, n_layers, device_name)
+        if mask_conditioning:
+            # RZ(mask_theta*mask) tren moi qubit moi lop - khoi tao 0 de bat dau
+            # tu hanh vi cu (xem circuit.py, Pha Q').
+            self.mask_theta = nn.Parameter(torch.zeros(n_layers, n_qubits))
+        self.circuit = make_circuit(n_qubits, n_layers, device_name, mask_conditioning)
+
+    def _run_circuit(self, inputs: torch.Tensor, mask: torch.Tensor):
+        if self.mask_conditioning:
+            return self.circuit(inputs, self.theta, mask[:, 0], self.mask_theta)
+        return self.circuit(inputs, self.theta)
 
     def _encode(self, y_t: torch.Tensor, x_lag: torch.Tensor, y_lag: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x_lag_masked = x_lag * mask
@@ -54,7 +65,7 @@ class QuantumStatisticsNetwork(nn.Module):
         mask: torch.Tensor,
     ) -> torch.Tensor:
         inputs = self._encode(y_t, x_lag, y_lag, mask)
-        z_list = self.circuit(inputs, self.theta)  # list of n_qubits tensors (batch,)
+        z_list = self._run_circuit(inputs, mask)  # list of n_qubits tensors (batch,)
         z_stack = torch.stack(z_list, dim=-1)  # (batch, n_qubits)
         out = self.readout(z_stack)
         return out.squeeze(-1)
@@ -73,6 +84,6 @@ class QuantumStatisticsNetwork(nn.Module):
         x_lag_masked = x_lag * mask
         xy = torch.cat([y_t, x_lag_masked, y_lag, mask], dim=-1)
         inputs = self._encode(y_t, x_lag, y_lag, mask)
-        z_list = self.circuit(inputs, self.theta)
+        z_list = self._run_circuit(inputs, mask)
         z_stack = torch.stack(z_list, dim=-1)
         return {"block0_input": xy, "block1": z_stack}
