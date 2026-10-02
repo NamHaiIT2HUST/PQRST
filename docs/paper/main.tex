@@ -1,0 +1,90 @@
+\documentclass[lettersize,journal]{IEEEtran}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{orcidlink} % Để chèn icon ORCID xanh lá
+
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+
+\begin{document}
+
+\title{Amortized Neural Estimation of Transfer Entropy for Short Time Series via Unsupervised Domain Adaptation}
+
+% Thêm tên tác giả và ORCID
+\author{Nam-Hai Nguyen-Dao~\orcidlink{0009-0003-4140-3367} and Ngoc-Son Nguyen
+\thanks{N.-H. Nguyen-Dao and N.-S. Nguyen are with the School of Electrical and Electronic Engineering, Hanoi University of Science and Technology, Hanoi, Vietnam (e-mail: namhai23092005@gmail.com; son.nn6303@gmail.com).}}
+
+\maketitle
+
+\begin{abstract}
+Transfer Entropy (TE) is a powerful model-free tool for discovering causal interactions in complex dynamical systems. However, its application to real-world biomedical signals is severely hindered by the fundamental trade-off between stationarity and sample size: ensuring stationarity requires extracting extremely short time windows (e.g., $N \le 200$), a regime where traditional and recent neural TE estimators suffer from prohibitively high variance. Furthermore, neural estimators trained on synthetic distributions inevitably encounter a critical domain gap when deployed on real-world noisy signals, leading to erroneous causal inferences. To overcome these limitations, we propose an Amortized Neural TE Estimator designed explicitly for the small-sample regime. By employing a shared network architecture that maps both source and target historical trajectories into a common representation space, we theoretically and empirically demonstrate a drastic reduction in estimation variance. Crucially, to bridge the reality gap without requiring ground-truth causal labels, we introduce an Unsupervised Domain Adaptation (UDA) strategy based on the Donsker-Varadhan bound. Extensive evaluations on both non-linear synthetic models and the real-world Fantasia cardiorespiratory dataset reveal that our method outperforms state-of-the-art baselines on short sequences ($N=10-200$) and achieves consistent directionality recovery on real signals. Our findings establish a robust, fast, and scalable framework for evaluating directed information flow in short, non-stationary physiological time series.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Transfer Entropy, Causality, Amortized Inference, Unsupervised Domain Adaptation, Short Time Series, Biomedical Signals.
+\end{IEEEkeywords}
+
+\section{Introduction}
+% Bạn sẽ dán nội dung Introduction từ draft vào đây
+\IEEEPARstart{T}{he} ability to infer directed, causal interactions from time-series data is a cornerstone...
+
+\section{Related Work}
+\subsection{Transfer Entropy and Mutual Information}
+% Viết về định nghĩa TE
+\subsection{Neural Estimators for Causality}
+% Viết về MINE, TREET, TENDE
+\subsection{Challenges in the Small-Sample Regime}
+% Viết về vấn đề Variance và Domain Gap
+
+\section{Methodology}
+\subsection{Problem Formulation}
+% Công thức Y_t, X_lag, Y_lag
+\subsection{Amortized TE Estimator Architecture}
+% Mô tả Shared Network
+\subsection{Variance Reduction via Shared Networks}
+% Proposition 1 & 2
+\subsection{Unsupervised Domain Adaptation (UDA)}
+% Quy trình fine-tune không nhãn
+
+\section{Experiments}
+\subsection{Datasets and Data Partitioning}
+% Linear VAR, Periodic Coupling, Fantasia
+\subsection{Training and Adaptation Setup}
+% Hyperparameters, Optimizer
+\subsection{Evaluation Setup}
+% Metrics: MSE, Variance, Direction Accuracy, P-value
+
+\section{Results}
+\subsection{Variance Reduction on Synthetic Short Time Series}
+% So sánh với KSG, Linear
+\subsection{Ablation Study: The Role of Shared Network}
+% So sánh với Standard MINE
+\subsection{Real-World Validation: Domain Adaptation on Fantasia}
+% Kết quả trước và sau khi UDA
+\subsection{Statistical Significance}
+% Paired Bootstrap, Wilcoxon tests
+
+\section{Discussion}
+\subsection{Mechanism of Variance Reduction}
+\subsection{Robustness of UDA vs. Overfitting}
+\subsection{Limitations and Future Work}
+
+\section{Conclusion}
+% Kết luận lại bài báo
+
+\section*{Acknowledgment}
+This work was supported by... (Điền quỹ tài trợ nếu có).
+
+\bibliographystyle{IEEEtran}
+\bibliography{References}
+
+\end{document}
