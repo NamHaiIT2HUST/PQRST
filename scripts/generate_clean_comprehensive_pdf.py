@@ -502,9 +502,10 @@ def build_pristine_pdf():
         story.append(Spacer(1, 1.5 * mm))
         story.append(Image(str(fig_var_path), width=164 * mm, height=64 * mm))
         story.append(Paragraph(
-            "<b>Hình 2:</b> So sánh phương sai ước lượng theo kích thước mẫu <i>N</i> giữa 5 bộ ước lượng "
-            "(KSG, Binning, Symbolic, Amortized MINE và Hybrid) trên dữ liệu tuyến tính (Linear VAR) và phi tuyến (Periodic Coupling). "
-            "Amortized MINE và Hybrid triệt tiêu phương sai vượt trội ở toàn bộ dải <i>N</i> nhỏ.",
+            "<b>Hình 2:</b> So sánh phương sai ước lượng theo kích thước mẫu <i>N</i> giữa các bộ ước lượng "
+            "(KSG, Binning, Symbolic, Amortized MINE) trên dữ liệu tuyến tính (Linear VAR) và phi tuyến (Periodic Coupling). "
+            "Đồ thị làm nổi bật vùng chuyển tiếp ngưỡng lý thuyết <i>N</i>* ∈ [30, 50] (Crossover Region theo Mệnh đề 4): "
+            "ở dải <i>N</i> < <i>N</i>*, KSG giữ phương sai cục bộ ổn định; khi <i>N</i> ≥ <i>N</i>*, Amortized MINE chiếm ưu thế áp đảo và triệt tiêu phương sai hơn 90%.",
             caption_style,
         ))
 

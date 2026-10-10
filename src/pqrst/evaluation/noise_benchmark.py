@@ -125,6 +125,7 @@ def summarize_noise_benchmark(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_noise_robustness(summary_df: pd.DataFrame, output_fig_path: str):
+    """Vẽ biểu đồ đánh giá độ bền trước nhiễu AWGN (so sánh trực diện KSG vs Amortized MINE)."""
     Path(output_fig_path).parent.mkdir(parents=True, exist_ok=True)
     n_samples_list = sorted(summary_df["n_samples"].unique())
 
@@ -132,14 +133,15 @@ def plot_noise_robustness(summary_df: pd.DataFrame, output_fig_path: str):
     if len(n_samples_list) == 1:
         axes = [axes]
 
-    colors = {"KSG": "#1f77b4", "Amortized": "#ff7f0e", "Hybrid": "#2ca02c"}
-    markers = {"KSG": "o", "Amortized": "s", "Hybrid": "^"}
+    colors = {"KSG": "#1f77b4", "Amortized": "#d95f02"}
+    markers = {"KSG": "o", "Amortized": "s"}
+    linestyles = {"KSG": "--", "Amortized": "-"}
 
     for idx, N in enumerate(n_samples_list):
         ax = axes[idx]
         df_n = summary_df[summary_df["n_samples"] == N]
 
-        for est in ["KSG", "Amortized", "Hybrid"]:
+        for est in ["KSG", "Amortized"]:
             df_est = df_n[df_n["estimator"] == est].copy()
             df_est = df_est.sort_values(by="snr_db", ascending=False)
 
@@ -150,10 +152,12 @@ def plot_noise_robustness(summary_df: pd.DataFrame, output_fig_path: str):
             ax.plot(
                 x_indices,
                 mses,
-                label=est,
+                label=f"{est} Estimator",
                 color=colors.get(est, "gray"),
                 marker=markers.get(est, "d"),
-                linewidth=2,
+                linestyle=linestyles.get(est, "-"),
+                linewidth=2.2,
+                markersize=7,
             )
 
         ax.set_title(f"Sample size N = {N}", fontsize=12, fontweight="bold")
@@ -163,9 +167,10 @@ def plot_noise_robustness(summary_df: pd.DataFrame, output_fig_path: str):
         ax.grid(True, linestyle="--", alpha=0.6)
         if idx == 0:
             ax.set_ylabel("Mean Squared Error (MSE)", fontsize=11)
-            ax.legend(frameon=True)
+            ax.legend(frameon=True, fontsize=10)
 
-    plt.suptitle("Robustness to Additive Gaussian Noise (AWGN)", fontsize=14, y=1.02)
+    plt.suptitle("Robustness to Additive Gaussian Noise (AWGN): KSG vs Amortized MINE", fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(output_fig_path, dpi=300, bbox_inches="tight")
     plt.close()
+
