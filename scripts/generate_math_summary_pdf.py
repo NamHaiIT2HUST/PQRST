@@ -555,10 +555,10 @@ def build_math_summary_pdf():
         body_style,
     ))
 
-    story.append(P("4.2. Tại sao MSE của Hybrid VQC lại cao hơn MLP? (Phân tích Toán học cho Mentor)", h2_style))
+    story.append(P("4.2. Bản Chất Toán Học của MSE và Cơ Chế Underfitting trong Hybrid VQC", h2_style))
     story.append(P(
         "Bóc tách công thức: <b>MSE = Bias<sup>2</sup> + Variance</b>.<br/>"
-        "Nhìn vào Bảng số liệu Ablation của nhóm:<br/>"
+        "Bảng số liệu thực nghiệm đa kiến trúc cho thấy cấu trúc chi tiết:<br/>"
         "• <b>Phương sai (Variance) của Hybrid VQC cực kỳ đẹp:</b> Đạt <b>1.77 × 10<sup>−5</sup></b> (thậm chí <b>nhỏ hơn Classical MLP tới 160 lần</b>, vì MLP là 2.88 × 10<sup>−3</sup>). Mạng lượng tử cho ước lượng cực kỳ ổn định!<br/>"
         "• <b>Độ lệch (Bias) bị âm:</b> Hybrid VQC ước lượng TE ≈ 0.016, trong khi Ground Truth là 0.181 (độ lệch Bias = −0.165). Do đó: MSE ≈ (−0.165)<sup>2</sup> + 1.77 × 10<sup>−5</sup> ≈ 0.0274.<br/>"
         "<b>NGUYÊN NHÂN:</b> Do giới hạn tính toán của bộ mô phỏng CPU (`lightning.qubit`) phải tính ma trận trạng thái phức tạp, "
@@ -568,7 +568,7 @@ def build_math_summary_pdf():
 
     story.append(P("4.3. Định vị Khoa học Chuẩn mực trong Bài báo Q1", h2_style))
     story.append(P(
-        "• <b>Ngôi sao thực chiến của bài báo (Primary Champion):</b> Là <b>Small MLP (369 tham số, 7.0 ms, MSE = 0.0036)</b>. "
+        "• <b>Mô hình triển khai thực tế tối ưu (Primary Architecture):</b> Là <b>Small MLP (369 tham số, 7.0 ms, MSE = 0.0036)</b>. "
         "Đây là mô hình triển khai chính cho Edge-AI và toàn bộ dữ liệu lâm sàng 40 ca Fantasia.<br/>"
         "• <b>Pure VQC & Hybrid VQC:</b> Đóng vai trò là <b>Nghiên cứu thăm dò tính khả thi lượng tử (Future Outlook / Feasibility Exploration)</b>, "
         "chứng minh lý thuyết MINE có thể mở rộng lên không gian Hilbert và kiến trúc lai giúp tăng tốc 2.8 lần so với Pure VQC thuần túy.",

@@ -1,5 +1,5 @@
 # TỔNG HỢP VÀ PHÂN TÍCH TOÁN HỌC CHUYÊN SÂU: TREET & TENDE
-**Tài liệu phân tích giải tích và đối sánh dành cho Mentor**
+**Tài liệu Phân tích Giải tích & Đối sánh Lý thuyết Thông tin Toàn diện**
 *Biên soạn: SPARC Laboratory — ĐHBK Hà Nội*
 
 ---
@@ -209,12 +209,12 @@ Chuyển Transfer Entropy về Thông tin Tương hỗ Có điều kiện CMI: $
 
 ---
 
-### 4.2. Tại sao MSE của Hybrid VQC lại cao hơn MLP? (Phân tích Toán học cho Mentor)
+### 4.2. Bản Chất Toán Học của MSE và Cơ Chế Underfitting trong Hybrid VQC
 
 Bóc tách công thức giải tích:
 $$\mathrm{MSE} = \mathrm{Bias}^2 + \mathrm{Variance}$$
 
-Nhìn vào Bảng số liệu Ablation của nhóm:
+Bảng số liệu thực nghiệm đa kiến trúc cho thấy cấu trúc chi tiết:
 * **Phương sai (Variance) của Hybrid VQC cực kỳ đẹp:** Đạt **$1.77 \times 10^{-5}$** (thậm chí **nhỏ hơn Classical MLP tới 160 lần**, vì MLP là $2.88 \times 10^{-3}$). Mạng lượng tử cho ước lượng cực kỳ ổn định!
 * **Độ lệch (Bias) bị âm:** Hybrid VQC ước lượng TE $\approx 0.016$, trong khi Ground Truth là $0.181$ (độ lệch $\mathrm{Bias} = -0.165$). Do đó: $\mathrm{MSE} \approx (-0.165)^2 + 1.77 \times 10^{-5} \approx 0.0274$.
 * **NGUYÊN NHÂN:** Do giới hạn tính toán của bộ mô phỏng CPU (`lightning.qubit`) phải tính ma trận trạng thái phức tạp, trong script khảo sát đa kiến trúc Hybrid VQC mới chỉ được train **7 epochs** (bị underfitting độ lệch) thay vì hàng trăm epochs như MLP cổ điển.
@@ -223,5 +223,5 @@ Nhìn vào Bảng số liệu Ablation của nhóm:
 
 ### 4.3. Định vị Khoa học Chuẩn mực trong Bài báo Q1
 
-* **Ngôi sao thực chiến của bài báo (Primary Champion):** Là **Small MLP (369 tham số, 7.0 ms, MSE = 0.0036)**. Đây là mô hình triển khai chính cho Edge-AI và toàn bộ dữ liệu lâm sàng 40 ca Fantasia.
+* **Mô hình triển khai thực tế tối ưu (Primary Architecture):** Là **Small MLP (369 tham số, 7.0 ms, MSE = 0.0036)**. Đây là mô hình triển khai chính cho Edge-AI và toàn bộ dữ liệu lâm sàng 40 ca Fantasia.
 * **Pure VQC & Hybrid VQC:** Đóng vai trò là **Nghiên cứu thăm dò tính khả thi lượng tử (Future Outlook / Feasibility Exploration)**, chứng minh lý thuyết MINE có thể mở rộng lên không gian Hilbert và kiến trúc lai giúp tăng tốc 2.8 lần so với Pure VQC thuần túy.
