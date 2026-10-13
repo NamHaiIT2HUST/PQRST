@@ -1,0 +1,37 @@
+\section{Introduction}
+
+\IEEEPARstart{T}{he} discovery and quantification of directed causal interactions within complex dynamical systems remains a foundational challenge in modern network physiology and cyber-physical healthcare \cite{schreiber2000measuring, faes2011information, porta2012quantifying}. In autonomic biomedical engineering, analyzing the asymmetric flow of information between organ systems—such as cardiorespiratory regulation, cerebral autoregulation, and neurovascular coupling—provides vital diagnostic insight into physiological resilience and degenerative deterioration. While classic parametric frameworks such as Granger causality evaluate temporal precedence through linear autoregressive models \cite{granger1969investigating}, biological networks operate far from thermodynamic equilibrium, displaying marked non-linearity, state-dependent coupling, and non-Gaussian perturbations. To overcome these constraints, Transfer Entropy (TE) \cite{schreiber2000measuring}, formulated as conditional mutual information, has emerged as the gold-standard model-free metric:
+\begin{equation}
+\label{eq:te_intro}
+TE_{X \to Y} = I(Y_t; X_{t-1} \mid Y_{t-1}) = I(Y_t; X_{t-1}, Y_{t-1}) - I(Y_t; Y_{t-1})
+\end{equation}
+By evaluating divergence across joint and conditional probability densities rather than assuming rigid functional forms, TE captures the full spectrum of non-linear directional dependencies \cite{vicente2011transfer}.
+
+\subsection{The Small-Sample Bottleneck in Biomedical Sensing}
+Despite its theoretical elegance, deploying TE on continuous wearable biosensors encounters an acute operational dilemma between statistical sample size and temporal stationarity. Autonomic physiological signals—including heart rate variability (RR intervals), photoplethysmography (PPG), and respiration—undergo rapid transient state transitions driven by sympathetic and parasympathetic reflex loops. Consequently, local statistical stationarity can only be reliably assumed over ultra-short observation windows of 10 to 30 seconds ($N = 20 - 120$ samples at standard clinical resampling rates) \cite{faes2011information}.
+
+Under such extreme small-sample constraints, existing estimation paradigms encounter critical limitations:
+\begin{enumerate}
+    \item \textbf{Classical Non-parametric Estimators:} The widely adopted Kraskov-St{\"o}gbauer-Grassberger (KSG) estimator \cite{kraskov2004estimating} relies on $k$-nearest neighbor ($k$-NN) distance distributions. In sparse data spaces ($N \le 100$), metric dispersion concentrates Euclidean distances in high dimensions ($d = 3$ or $4$), resulting in catastrophic finite-sample variance explosion that renders directional inferences statistically unreplicable.
+    \item \textbf{Recent Deep Generative Estimators:} Emerging deep learning architectures, such as Transformer-based TE (TREET, 2024/2025) \cite{treet2024} and Score-based Diffusion TE (TENDE, 2026) \cite{tende2025}, are engineered exclusively for massive, stationary sequences ($T \ge 1,000 - 50,000$ samples). In the ultra-short regime ($N < 100$), multi-head self-attention mechanisms suffer severe attention weight dispersion, generating unphysical negative values, while multi-step diffusion sampling demands high-end GPU workstations ($\sim 20$ minutes per time-series pair), completely precluding real-time edge execution.
+\end{enumerate}
+
+\subsection{The Reality Gap and Latent Covariate Shift}
+To circumvent the computational bottleneck of per-sample training, an amortized inference paradigm pre-trains a statistics network over a large synthetic corpus. However, when a frozen model trained on simulated autoregressive or oscillator distributions is deployed directly on raw biological acquisitions, an acute \emph{covariate shift} emerges. As revealed by principal component analysis (PCA) of latent layer representations, empirical physiological signals fall entirely outside the trained manifold, frequently producing inverted causal directions and false conclusions.
+
+\subsection{Contributions of This Work}
+To resolve both the sample-size bottleneck and the reality gap, we present an **Amortized Neural Transfer Entropy** framework tailored for ultra-short time series and wearable edge intelligence. Our main contributions are:
+\begin{enumerate}
+    \item \textbf{Theoretical Rigor (Propositions 1--4):} We formally prove:
+    \begin{itemize}
+        \item \emph{Non-separability of Statistics Networks} (Proposition~\ref{prop:non_separable}): Demonstrating that cross-channel non-linear interactions are strictly necessary.
+        \item \emph{Variance Reduction via Parameter Sharing} (Proposition~\ref{prop:var_reduction}): Proving that unified masked networks induce positive covariance $\mathrm{Cov}(\widehat{I}_{\text{full}}, \widehat{I}_{\text{red}}) > 0$, eliminating independent Monte Carlo variance.
+        \item \emph{Robustness Against Additive Noise} (Proposition~\ref{prop:noise_robustness}): Establishing a Lipschitz perturbation bound $\mathcal{O}(L^2 \sigma^2)$ under Additive White Gaussian Noise (AWGN).
+        \item \emph{Analytical Crossover Boundary $N^*$} (Proposition~\ref{prop:crossover}): Deriving the closed-form balance point $N^* \in [30, 50]$ where amortized inference strictly dominates non-parametric estimators.
+    \end{itemize}
+    \item \textbf{Label-Free Unsupervised Domain Adaptation (UDA):} We introduce a test-time adaptation protocol leveraging the Donsker-Varadhan (DV) bound. By fine-tuning shared representations on temporally shuffled marginal distributions, the network dynamically adapts to patient-specific manifolds without requiring ground-truth causal labels.
+    \item \textbf{Comprehensive Multi-Architecture Exploration:} We benchmark five diverse model families—from a 369-parameter lightweight Edge MLP executing in 7.0~ms to a 4-qubit Hybrid Classical-Quantum circuit (MLP + VQC) achieving ultra-low variance ($1.77 \times 10^{-5}$)—demonstrating real-time wearable viability.
+    \item \textbf{Full-Cohort Clinical Aging Validation (40 Fantasia Records):} Validated across the complete 40-subject PhysioNet Fantasia cohort (20 Young vs. 20 Old, 9,443 analysis windows), our method verifies age-related respiratory sinus arrhythmia (RSA) blunting with high significance ($p = 0.0045$, Cohen's $d = 0.67$), achieves a 2.2-fold variance reduction over KSG, and resolves an algorithmic censoring bias that previously discarded 85\% of elderly records.
+\end{enumerate}
+
+The remainder of this paper is structured as follows. Section~II reviews related work. Section~III formulates the theoretical foundations, propositions, and proposed architecture. Section~IV details the experimental setup and datasets. Section~V presents empirical results across synthetic and clinical benchmarks. Section~VI discusses comparative advantages against state-of-the-art estimators, and Section~VII concludes the paper.
