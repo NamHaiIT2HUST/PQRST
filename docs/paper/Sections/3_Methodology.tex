@@ -1,5 +1,12 @@
 \section{Theoretical Foundations \& Methodology}
 
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{Fig/framework_architecture.png}
+\caption{Architectural overview of the proposed Amortized Neural Transfer Entropy framework with Unsupervised Domain Adaptation (ANTE-UDA). (A) Non-stationary biosignal windowing ($N \le 100$ samples) and lagged coordinate embedding. (B) Unified masked statistics network $T_\phi$ with auxiliary binary mask $m \in \{0, 1\}$, inducing positive covariance $\mathrm{Cov}(\widehat{I}_{\text{full}}, \widehat{I}_{\text{red}}) > 0$ and eliminating Monte Carlo variance (Proposition~\ref{prop:var_reduction}). (C) Test-time unsupervised domain adaptation optimizing the empirical Donsker-Varadhan variational objective on permuted marginals without requiring ground-truth causal labels. (D) Multi-model architectural benchmark space comparing the 369-parameter Lightweight Edge MLP against the 4-qubit Hybrid Classical-Quantum circuit. (E) Clinical aging validation across 40 Fantasia subjects demonstrating significant RSA decoupling and resolving prior algorithmic selection bias.}
+\label{fig:framework_architecture}
+\end{figure*}
+
 \subsection{Problem Formulation \& Information-Theoretic Decomposition}
 Let $X = \{x_t\}_{t=1}^N$ and $Y = \{y_t\}_{t=1}^N$ be two jointly observed, discrete-time stochastic processes. Under the classical definition introduced by Schreiber \cite{schreiber2000measuring}, Transfer Entropy from $X$ to $Y$ quantifies the deviation from the generalized Markov condition:
 \begin{equation}
