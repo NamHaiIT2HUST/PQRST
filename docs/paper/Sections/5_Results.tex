@@ -16,9 +16,11 @@ In contrast, our Amortized Estimator with parameter sharing maintains strictly b
 \caption{Performance Benchmark Across Varying Sample Sizes ($N$)}
 \label{tab:sample_size_comparison}
 \centering
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{l c c c c c c}
 \toprule
-\textbf{Model / Metric} & \textbf{N=10} & \textbf{N=20} & \textbf{N=30} & \textbf{N=50} & \textbf{N=100} & \textbf{N=200} \\
+\textbf{Model / Metric} & $\mathbf{N=10}$ & $\mathbf{N=20}$ & $\mathbf{N=30}$ & $\mathbf{N=50}$ & $\mathbf{N=100}$ & $\mathbf{N=200}$ \\
 \midrule
 \textit{Non-linear Periodic} \\
 KSG (MSE) & 0.0293 & 0.0316 & 0.0326 & 0.0382 & 0.0278 & 0.0138 \\
@@ -29,7 +31,8 @@ $p$-value (Wilcoxon) & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<
 KSG (MSE) & 0.0169 & 0.0120 & 0.0091 & \textbf{0.0064} & \textbf{0.0034} & \textbf{0.0018} \\
 Amortized (MSE) & \textbf{0.0180} & \textbf{0.0112} & \textbf{0.0085} & 0.0065 & 0.0048 & 0.0039 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \subsection{Robustness Under Additive Gaussian Noise (AWGN)}
@@ -46,29 +49,32 @@ To evaluate resilience against measurement artifacts, we tested estimators on li
 \caption{MSE Under Additive White Gaussian Noise (AWGN)}
 \label{tab:noise_results}
 \centering
+\setlength{\tabcolsep}{3.5pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{ccccc}
 \toprule
-Window ($N$) & SNR Level & KSG & Amortized MINE & Improvement \\
+Window ($N$) & SNR Level & KSG & Amortized MINE & Error Reduction \\
 \midrule
-$N = 20$ & Clean ($\infty$) & 0.01351 & \textbf{0.00761} & 1.8$\times$ lower MSE \\
-$N = 20$ & 20 dB & 0.01205 & \textbf{0.00646} & 1.9$\times$ lower MSE \\
-$N = 20$ & 15 dB & 0.01096 & \textbf{0.00758} & 1.4$\times$ lower MSE \\
+$N = 20$ & Clean ($\infty$) & 0.01351 & \textbf{0.00761} & 1.8$\times$ lower \\
+$N = 20$ & 20 dB & 0.01205 & \textbf{0.00646} & 1.9$\times$ lower \\
+$N = 20$ & 15 dB & 0.01096 & \textbf{0.00758} & 1.4$\times$ lower \\
 $N = 20$ & 10 dB & 0.01670 & \textbf{0.01602} & Comparable \\
-$N = 20$ & 5 dB & 0.02170 & \textbf{0.01767} & 1.2$\times$ lower MSE \\
-$N = 20$ & 0 dB & 0.02973 & \textbf{0.02634} & 1.1$\times$ lower MSE \\
+$N = 20$ & 5 dB & 0.02170 & \textbf{0.01767} & 1.2$\times$ lower \\
+$N = 20$ & 0 dB & 0.02973 & \textbf{0.02634} & 1.1$\times$ lower \\
 \midrule
-$N = 50$ & Clean ($\infty$) & 0.00846 & \textbf{0.00419} & 2.0$\times$ lower MSE \\
-$N = 50$ & 20 dB & 0.00851 & \textbf{0.00301} & \textbf{2.8$\times$ lower MSE} \\
-$N = 50$ & 15 dB & 0.00933 & \textbf{0.00523} & 1.8$\times$ lower MSE \\
-$N = 50$ & 10 dB & 0.01099 & \textbf{0.00695} & \textbf{1.6$\times$ lower MSE} \\
-$N = 50$ & 5 dB & 0.01684 & \textbf{0.01305} & 1.3$\times$ lower MSE \\
+$N = 50$ & Clean ($\infty$) & 0.00846 & \textbf{0.00419} & 2.0$\times$ lower \\
+$N = 50$ & 20 dB & 0.00851 & \textbf{0.00301} & \textbf{2.8$\times$ lower} \\
+$N = 50$ & 15 dB & 0.00933 & \textbf{0.00523} & 1.8$\times$ lower \\
+$N = 50$ & 10 dB & 0.01099 & \textbf{0.00695} & \textbf{1.6$\times$ lower} \\
+$N = 50$ & 5 dB & 0.01684 & \textbf{0.01305} & 1.3$\times$ lower \\
 $N = 50$ & 0 dB & 0.03180 & \textbf{0.03091} & Comparable \\
 \midrule
-$N = 100$ & Clean ($\infty$) & 0.00502 & \textbf{0.00222} & 2.3$\times$ lower MSE \\
-$N = 100$ & 20 dB & 0.00316 & \textbf{0.00215} & 1.5$\times$ lower MSE \\
-$N = 100$ & 10 dB & 0.00809 & \textbf{0.00523} & 1.5$\times$ lower MSE \\
+$N = 100$ & Clean ($\infty$) & 0.00502 & \textbf{0.00222} & 2.3$\times$ lower \\
+$N = 100$ & 20 dB & 0.00316 & \textbf{0.00215} & 1.5$\times$ lower \\
+$N = 100$ & 10 dB & 0.00809 & \textbf{0.00523} & 1.5$\times$ lower \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 At $N = 50$ and 20~dB SNR (typical wearable signal quality), Amortized MINE achieves $\text{MSE} = 0.00301$ compared to KSG's $0.00851$, representing a \textbf{2.8-fold error reduction}. Under moderate noise (10~dB SNR, $N=50$), Amortized MINE maintains a 1.6-fold lower MSE ($0.00695$ vs. $0.01099$). Even at $N=20$, Amortized MINE outperforms KSG by 1.9$\times$ at 20~dB SNR, confirming the quadratic Lipschitz noise dampening derived in Proposition~\ref{prop:noise_robustness}.
@@ -87,6 +93,8 @@ We benchmarked five model families to assess parameter efficiency, inference lat
 \caption{Model Architecture Ablation Comparison}
 \label{tab:model_comparison}
 \centering
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccc}
 \toprule
 Architecture & Parameters & Latency (ms) & Variance & Bias & MSE \\
@@ -97,7 +105,8 @@ Temporal 1D-CNN & 2,193 & 23.8 & \textbf{0.000005} & -0.1703 & 0.0290 \\
 Pure VQC (6-qubit) & 61 & 13,197 & 0.01559 & -0.0672 & 0.0201 \\
 Hybrid MLP+VQC (4Q) & 213 & 4,799 & \textbf{0.000018} & -0.1655 & 0.0274 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \textbf{Edge-AI Deployment Champion:} The 369-parameter Small MLP achieves $\text{MSE} = 0.0036$, virtually matching the 25,473-parameter Classical MLP ($\text{MSE} = 0.0032$), while requiring only \textbf{7.0~ms per-window inference latency} on standard single-thread CPU execution. With a memory footprint of only 1.5~KB, it is readily deployable on resource-constrained embedded microcontrollers (e.g., ARM Cortex-M).
@@ -132,6 +141,8 @@ We evaluated our adapted framework across the complete 40-subject cohort of the 
 \caption{Clinical Aging Benchmark on 40 Fantasia Subjects}
 \label{tab:clinical_aging}
 \centering
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcc}
 \toprule
 Clinical Metric / Hypothesis & Classical KSG & Amortized MINE (OOF) \\
@@ -146,7 +157,8 @@ Correlation with Age ($\rho$) & $\rho = -0.3907$ ($p = 0.013$) & Consistent Deca
 \textbf{Standard Deviation in Young} & 0.0406 & \textbf{0.0184 (2.2$\times$ lower)} \\
 Total Inference Time (40 records) & 313.6 s & \textbf{$< 1.0$ s (post-adaptation)} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \begin{enumerate}
