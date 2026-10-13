@@ -20,7 +20,7 @@ Under such extreme small-sample constraints, existing estimation paradigms encou
 To circumvent the computational bottleneck of per-sample training, an amortized inference paradigm pre-trains a statistics network over a large synthetic corpus. However, when a frozen model trained on simulated autoregressive or oscillator distributions is deployed directly on raw biological acquisitions, an acute \emph{covariate shift} emerges. As revealed by principal component analysis (PCA) of latent layer representations, empirical physiological signals fall entirely outside the trained manifold, frequently producing inverted causal directions and false conclusions.
 
 \subsection{Contributions of This Work}
-To resolve both the sample-size bottleneck and the reality gap, we present an **Amortized Neural Transfer Entropy** framework tailored for ultra-short time series and wearable edge intelligence. Our main contributions are:
+To resolve both the sample-size bottleneck and the reality gap, we present an \textbf{Amortized Neural Transfer Entropy} framework tailored for ultra-short time series and wearable edge intelligence. Our main contributions are:
 \begin{enumerate}
     \item \textbf{Theoretical Rigor (Propositions 1--4):} We formally prove:
     \begin{itemize}
